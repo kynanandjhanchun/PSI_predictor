@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Singapore PSI Predictor - Live</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #000000;
+    color: #EDEDED;
+    margin: 0;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    max-width: 480px;
+    width: 100%;
+    background: #0D0D0D;
+    border: 1px solid #262626;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: #FFFFFF;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #9A9A9A;
+    margin: 0 0 1.75rem;
+    line-height: 1.5;
+  }
+  .gauge-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0 0.5rem;
+  }
+  .gauge {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 10px solid #333333;
+    background: #0D0D0D;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.4s ease;
+  }
+  .gauge .value {
+    font-size: 64px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1;
+    color: #FFFFFF;
+  }
+  .gauge .band {
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 6px;
+    color: #B8B8B8;
+  }
+  .inputs {
+    margin-top: 1.75rem;
+    text-align: left;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    color: #C7C7C7;
+  }
+  .inputs div {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+  .status {
+    font-size: 13px;
+    color: #9A9A9A;
+    margin-top: 1rem;
+  }
+  .footer {
+    font-size: 12px;
+    color: #6E6E6E;
+    margin-top: 1.25rem;
+    line-height: 1.6;
+    text-align: left;
+  }
+  button {
+    margin-top: 1rem;
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #333333;
+    background: #161616;
+    color: #EDEDED;
+    cursor: pointer;
+  }
+  button:hover { background: #1F1F1F; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Singapore PSI predictor</h1>
+  <p class="subtitle">Predicted PSI for tomorrow, based on current weather and PSI readings from NEA.</p>
+
+  <p id="status" class="status">Loading live data...</p>
+
+  <div class="gauge-wrap">
+    <div class="gauge" id="gauge" style="display:none">
+      <p class="value" id="psi-value"></p>
+      <p class="band" id="psi-band"></p>
+    </div>
+  </div>
+
+  <div class="inputs" id="inputs" style="display:none"></div>
+
+  <button onclick="loadAndPredict()">Refresh</button>
+
+  <p class="footer">
+    Model: linear regression trained on Admiralty weather station and national PSI, April 2014&ndash;November 2017 (n = 1095 days). Test MAE 5.37 vs baseline 5.72.<br><br>
+    Note: this live version uses the <em>current instant</em> weather reading in place of a full day's mean/max/min &mdash; the trained model expects daily summaries, so this is an approximation, not an exact match to how it was trained.
+  </p>
+</div>
+
+<script>
+const coef = {
+  intercept: -6.489654688536582,
+  daily_rainfall_total: 0.0002032696363603584,
+  mean_temperature: 0.16466766678389233,
+  maximum_temperature: 0.13475733931850317,
+  minimum_temperature: 0.46301827284576436,
+  mean_wind_speed: -0.21492017992934748,
+  max_wind_speed: -0.060940197184321754,
+  psi_today: 0.8331282884532302
+};
+
+function getBand(v){
+  if (v <= 50)  return 'Good';
+  if (v <= 100) return 'Moderate';
+  if (v <= 200) return 'Unhealthy';
+  if (v <= 300) return 'Very unhealthy';
+  return 'Hazardous';
+}
+
+// Smooth blue (clean) to red (hazardous) color, based on PSI value.
+// Hue 210 (blue) at PSI 0, sweeping down to hue 0 (red) at PSI 300+.
+function getGaugeColor(v){
+  const clamped = Math.max(0, Math.min(300, v));
+  const t = clamped / 300;
+  const hue = 210 - (210 * t);
+  const lightness = 50 - (10 * t);
+  return 'hsl(' + hue.toFixed(0) + ', 70%, ' + lightness.toFixed(0) + '%)';
+}
+
+async function fetchJson(endpoint){
+  const res = await fetch('https://api-open.data.gov.sg/v2/real-time/api/' + endpoint);
+  if (!res.ok) throw new Error(endpoint + ' request failed');
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(endpoint + ' returned an error');
+  return json.data;
+}
+
+// PSI/PM2.5 style endpoints: data.items[0].readings.{key} = {north, south, east, west, central, [national]}
+// National PSI, per NEA's own definition, is the max of the 5 regional readings -
+// compute it ourselves rather than relying on an optional "national" field that
+// isn't always present in the live response.
+async function fetchAirQualityNational(endpoint, readingKey){
+  const data = await fetchJson(endpoint);
+  const readings = data.items[0].readings[readingKey];
+  if (readings.national !== undefined && readings.national !== null) {
+    return readings.national;
+  }
+  const regionValues = ['north','south','east','west','central']
+    .map(r => readings[r])
+    .filter(v => typeof v === 'number');
+  if (regionValues.length === 0) throw new Error(readingKey + ' had no usable regional values');
+  return Math.max(...regionValues);
+}
+
+// Weather station endpoints: data.readings[0].data = [{stationId, value}, ...]
+// Average across all reporting stations as a single Singapore-wide current reading.
+async function fetchWeatherAverage(endpoint){
+  const data = await fetchJson(endpoint);
+  const values = data.readings[0].data.map(r => r.value);
+  return values.reduce((a,b) => a+b, 0) / values.length;
+}
+
+async function loadAndPredict(){
+  const statusEl = document.getElementById('status');
+  const gaugeEl = document.getElementById('gauge');
+  const valueEl = document.getElementById('psi-value');
+  const bandEl = document.getElementById('psi-band');
+  const inputsEl = document.getElementById('inputs');
+
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Loading live data...';
+  gaugeEl.style.display = 'none';
+  inputsEl.style.display = 'none';
+
+  try {
+    const results = await Promise.allSettled([
+      fetchAirQualityNational('psi', 'psi_twenty_four_hourly'),
+      fetchWeatherAverage('air-temperature'),
+      fetchWeatherAverage('rainfall'),
+      fetchWeatherAverage('wind-speed')
+    ]);
+
+    const labels = ['psi', 'temperature', 'rainfall', 'wind speed'];
+    const fallbacks = [55, 28, 4, 12];
+    const fallbackUsed = [];
+
+    const values = results.map((r, i) => {
+      if (r.status === 'fulfilled' && typeof r.value === 'number' && !isNaN(r.value)) {
+        return r.value;
+      }
+      fallbackUsed.push(labels[i]);
+      return fallbacks[i];
+    });
+
+    const [psiToday, currentTemp, currentRain, currentWind] = values;
+
+    if (fallbackUsed.length > 0) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Note: ' + fallbackUsed.join(', ') + ' could not be reached just now, using a typical estimate instead.';
+    } else {
+      statusEl.style.display = 'none';
+    }
+
+    const features = {
+      daily_rainfall_total: currentRain,
+      mean_temperature: currentTemp,
+      maximum_temperature: currentTemp,
+      minimum_temperature: currentTemp,
+      mean_wind_speed: currentWind,
+      max_wind_speed: currentWind,
+      psi_today: psiToday
+    };
+
+    let prediction = coef.intercept;
+    for (const key in features){
+      prediction += coef[key] * features[key];
+    }
+    prediction = Math.max(0, Math.round(prediction));
+
+    valueEl.textContent = prediction;
+    bandEl.textContent = getBand(prediction);
+    gaugeEl.style.borderColor = getGaugeColor(prediction);
+    gaugeEl.style.display = 'flex';
+
+    inputsEl.innerHTML =
+      '<div><span>Today\'s national PSI</span><span>' + Math.round(psiToday) + '</span></div>' +
+      '<div><span>Current temperature</span><span>' + currentTemp.toFixed(1) + ' &deg;C</span></div>' +
+      '<div><span>Current rainfall reading</span><span>' + currentRain.toFixed(1) + ' mm</span></div>' +
+      '<div><span>Current wind speed</span><span>' + currentWind.toFixed(1) + ' km/h</span></div>';
+    inputsEl.style.display = 'block';
+
+  } catch (err) {
+    statusEl.textContent = 'Could not load live data (' + err.message + '). Check your connection and try refresh.';
+  }
+}
+
+loadAndPredict();
+</script>
+</body>
+</html>
