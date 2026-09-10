@@ -150,14 +150,18 @@ function getBand(v){
   return 'Hazardous';
 }
 
-// Smooth blue (clean) to red (hazardous) color, based on PSI value.
-// Hue 210 (blue) at PSI 0, sweeping down to hue 0 (red) at PSI 300+.
+// Direct RGB interpolation from blue (low PSI) to red (high PSI), passing through
+// purple in the middle -- deliberately avoids sweeping through the hue circle,
+// which would pass through green (misleadingly signalling "good") at mid-range PSI.
 function getGaugeColor(v){
   const clamped = Math.max(0, Math.min(300, v));
   const t = clamped / 300;
-  const hue = 210 - (210 * t);
-  const lightness = 50 - (10 * t);
-  return 'hsl(' + hue.toFixed(0) + ', 70%, ' + lightness.toFixed(0) + '%)';
+  const blue  = { r: 37,  g: 99,  b: 235 };
+  const red   = { r: 220, g: 38,  b: 38 };
+  const r = Math.round(blue.r + (red.r - blue.r) * t);
+  const g = Math.round(blue.g + (red.g - blue.g) * t);
+  const b = Math.round(blue.b + (red.b - blue.b) * t);
+  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
 }
 
 async function fetchJson(endpoint){
