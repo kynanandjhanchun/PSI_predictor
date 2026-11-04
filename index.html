@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Singapore PSI Predictor - Live</title>
+<title>Singapore PSI Predictor - Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   * { box-sizing: border-box; }
   body {
@@ -11,92 +12,40 @@
     background: #000000;
     color: #EDEDED;
     margin: 0;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem 2rem;
     display: flex;
     justify-content: center;
   }
-  .card {
-    max-width: 480px;
+  .page { width: 100%; max-width: 960px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; color: #FFFFFF; }
+  .subtitle { font-size: 13px; color: #9A9A9A; margin: 0 0 1rem; line-height: 1.5; }
+  .status { font-size: 13px; color: #9A9A9A; margin: 0 0 0.75rem; min-height: 1.2em; }
+  #map {
     width: 100%;
-    background: #0D0D0D;
-    border: 1px solid #262626;
+    height: 500px;
     border-radius: 16px;
-    padding: 2rem;
-    text-align: center;
-  }
-  h1 {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 4px;
-    color: #FFFFFF;
-  }
-  .subtitle {
-    font-size: 13px;
-    color: #9A9A9A;
-    margin: 0 0 1.75rem;
-    line-height: 1.5;
-  }
-  .gauge-wrap {
-    display: flex;
-    justify-content: center;
-    margin: 1.5rem 0 0.5rem;
-  }
-  .gauge {
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    border: 10px solid #333333;
-    background: #0D0D0D;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: border-color 0.4s ease;
-  }
-  .gauge .value {
-    font-size: 64px;
-    font-weight: 600;
-    margin: 0;
-    line-height: 1;
-    color: #FFFFFF;
-  }
-  .gauge .band {
-    font-size: 14px;
-    font-weight: 600;
-    margin-top: 6px;
-    color: #B8B8B8;
-  }
-  .inputs {
-    margin-top: 1.75rem;
-    text-align: left;
-    background: #161616;
     border: 1px solid #262626;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
+    background: #CFE8F6;   /* light blue sea */
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-top: 12px;
     font-size: 13px;
     color: #C7C7C7;
   }
-  .inputs div {
-    display: flex;
-    justify-content: space-between;
-    padding: 3px 0;
-  }
-  .status {
-    font-size: 13px;
-    color: #9A9A9A;
-    margin-top: 1rem;
-  }
-  .footer {
-    font-size: 12px;
-    color: #6E6E6E;
-    margin-top: 1.25rem;
-    line-height: 1.6;
-    text-align: left;
-  }
+  .controls .group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .controls .group-title { color: #6E6E6E; font-size: 12px; }
+  .controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; background: #BDBDBD; }
+  .dot.bball { border: 2px solid #111111; }
+  .dot.play { border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px #777; }
+  .dot.rec { border-radius: 3px; border: 2px solid #16A34A; background: #0D0D0D; }
   button {
-    margin-top: 1rem;
     font-size: 13px;
-    padding: 8px 16px;
+    padding: 7px 14px;
     border-radius: 8px;
     border: 1px solid #333333;
     background: #161616;
@@ -104,67 +53,315 @@
     cursor: pointer;
   }
   button:hover { background: #1F1F1F; }
+  .hint { font-size: 12px; color: #6E6E6E; margin: 8px 0 0; min-height: 1.2em; }
+  .legend { margin-top: 14px; }
+  .legend-bar { height: 10px; border-radius: 5px; }
+  .legend-ticks { display: flex; justify-content: space-between; font-size: 11px; color: #9A9A9A; margin-top: 4px; }
+  .legend-caption { font-size: 12px; color: #6E6E6E; margin-top: 2px; }
+  .panel {
+    margin-top: 14px;
+    background: #0D0D0D;
+    border: 1px solid #262626;
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    font-size: 13px;
+    color: #C7C7C7;
+    line-height: 1.6;
+  }
+  .panel b { color: #FFFFFF; }
+  .panel .row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .panel-title { font-size: 13px; font-weight: 600; color: #FFFFFF; margin-bottom: 8px; }
+  .guide-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+  .guide-note { font-size: 12px; color: #6E6E6E; margin-top: 8px; line-height: 1.5; }
+  .footer { font-size: 12px; color: #6E6E6E; margin-top: 1.25rem; line-height: 1.6; }
+
+  .region-badge {
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    border: 5px solid #333;
+    background: #0D0D0D;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  }
+  .region-badge .num { font-size: 18px; font-weight: 600; color: #FFFFFF; line-height: 1; }
+  .region-badge .nm { font-size: 9px; color: #B8B8B8; margin-top: 2px; }
+  .spot {
+    width: 30px; height: 30px; flex-shrink: 0;
+    border-radius: 8px;
+    border: 3px solid #333;
+    background: #0D0D0D;
+    color: #FFFFFF;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.5);
+  }
+  .pin {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.6);
+  }
+  .place-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+    color: #4C5B67; text-align: center; white-space: nowrap;
+    text-shadow: 0 0 3px #F4F1E8, 0 0 3px #F4F1E8, 0 0 3px #F4F1E8;
+    pointer-events: none;
+  }
+  .north-arrow {
+    background: rgba(255,255,255,0.9); border-radius: 8px; padding: 4px 9px;
+    font-size: 12px; font-weight: 700; color: #33414D; text-align: center; line-height: 1.1;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .north-arrow .arr { display: block; font-size: 10px; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #161616; color: #EDEDED; }
+  .leaflet-popup-content { font-size: 13px; line-height: 1.5; margin: 10px 14px; }
+  .leaflet-popup-content a { color: #7FB4FF; }
+  .leaflet-tooltip { font-size: 12px; }
 </style>
 </head>
 <body>
-<div class="card">
+<div class="page">
   <h1>Singapore PSI predictor</h1>
-  <p class="subtitle">Predicted PSI for tomorrow, based on current weather and PSI readings from NEA.</p>
+  <p class="subtitle">Predicted PSI for tomorrow in each region of Singapore and at outdoor recreation areas, based on current weather and PSI readings from NEA. Click anywhere on the map to check a specific spot.</p>
 
   <p id="status" class="status">Loading live data...</p>
+  <div id="map"></div>
+  <p id="map-note" class="hint"></p>
 
-  <div class="gauge-wrap">
-    <div class="gauge" id="gauge" style="display:none">
-      <p class="value" id="psi-value"></p>
-      <p class="band" id="psi-band"></p>
+  <div class="controls">
+    <div class="group">
+      <span class="group-title">Map style</span>
+      <label><input type="radio" name="mapstyle" value="clean" checked>Clean map</label>
+      <label><input type="radio" name="mapstyle" value="street">Street map</label>
+    </div>
+    <div class="group">
+      <span class="group-title">Show</span>
+      <label><input type="checkbox" id="toggle-rec" checked><span class="dot rec"></span>Recreation areas</label>
+      <label><input type="checkbox" id="toggle-bball"><span class="dot bball"></span>Basketball courts</label>
+      <label><input type="checkbox" id="toggle-play"><span class="dot play"></span>Playgrounds</label>
+    </div>
+    <div class="group">
+      <button id="btn-locate">Use my location</button>
+      <button id="btn-refresh">Refresh</button>
     </div>
   </div>
+  <p id="layer-status" class="hint"></p>
 
-  <div class="inputs" id="inputs" style="display:none"></div>
+  <div class="legend">
+    <div id="legend-bar" class="legend-bar"></div>
+    <div class="legend-ticks"><span>0</span><span>100</span><span>200</span><span>300</span></div>
+    <div class="legend-caption">Predicted PSI for tomorrow (blue = clean air, maroon = extreme)</div>
+  </div>
 
-  <button onclick="loadAndPredict()">Refresh</button>
+  <div class="panel" id="rec-guide">
+    <div class="panel-title">How PSI is shown at outdoor recreation areas</div>
+    <div id="rec-guide-rows"></div>
+    <div class="guide-note">Each recreation area gets a marker coloured by its region's predicted PSI, with the number inside. Courts and playgrounds from OpenStreetMap use the same colours as small dots. The activity guide is a simplified version of NEA's PSI health advisory bands, so check nea.gov.sg for official advice.</div>
+  </div>
+
+  <div id="selected" class="panel">Click anywhere on the map, or tap a recreation area, court or playground, to see the predicted PSI for that spot.</div>
+  <div id="inputs" class="panel" style="display:none"></div>
 
   <p class="footer">
-    Model: linear regression trained on Admiralty weather station and national PSI, April 2014&ndash;November 2017 (n = 1095 days). Test MAE 5.37 vs baseline 5.72.<br><br>
-    Note: this live version uses the <em>current instant</em> weather reading in place of a full day's mean/max/min &mdash; the trained model expects daily summaries, so this is an approximation, not an exact match to how it was trained.
+    Five linear regression models, one per NEA region, trained on Admiralty weather station data and each region's PSI, April 2014 to November 2017 (n = 979 days per region).
+    Test MAE versus a naive baseline (tomorrow = today): North 5.71 vs 6.07, South 6.16 vs 6.68, East 5.84 vs 6.33, West 6.12 vs 6.62, Central 6.88 vs 7.44.<br><br>
+    Limitations: PSI is reported per region, not per street, so any spot you pick gets its region's prediction. Region borders are approximated by whichever NEA region centre is nearest. The clean map is a simplified outline, not a survey-grade map. All regions use the same weather inputs. The live version uses the current instant weather reading in place of the daily summaries the models were trained on. The listed recreation areas are examples with approximate positions. Court and playground locations come from OpenStreetMap volunteers and may be incomplete.<br><br>
+    Coastline data: &copy; OpenStreetMap contributors (ODbL), via geo-maps by Simone Primarosa. Street map: &copy; OpenStreetMap contributors &copy; CARTO.
   </p>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-const coef = {
-  intercept: -6.489654688536582,
-  daily_rainfall_total: 0.0002032696363603584,
-  mean_temperature: 0.16466766678389233,
-  maximum_temperature: 0.13475733931850317,
-  minimum_temperature: 0.46301827284576436,
-  mean_wind_speed: -0.21492017992934748,
-  max_wind_speed: -0.060940197184321754,
-  psi_today: 0.8331282884532302
+// ---------------------------------------------------------------
+// Trained models: one linear regression per NEA region
+// ---------------------------------------------------------------
+const MODELS = {
+  north: {
+    intercept: -7.922206201965558,
+    daily_rainfall_total: -0.011086329790388712,
+    mean_temperature: 0.2648984768582324,
+    maximum_temperature: 0.16307999467862777,
+    minimum_temperature: 0.36927255370480616,
+    mean_wind_speed: -0.27556493917172775,
+    max_wind_speed: -0.03879513201001783,
+    psi_today: 0.8180760266537879
+  },
+  south: {
+    intercept: -6.424099294426135,
+    daily_rainfall_total: -0.0007019151192266235,
+    mean_temperature: 0.15056827520146054,
+    maximum_temperature: 0.19965748819284762,
+    minimum_temperature: 0.3570082753490262,
+    mean_wind_speed: -0.19656068119639203,
+    max_wind_speed: -0.04823186902959803,
+    psi_today: 0.8242657174504164
+  },
+  east: {
+    intercept: -4.585344033837828,
+    daily_rainfall_total: 0.006122333867959901,
+    mean_temperature: -0.4392844094336833,
+    maximum_temperature: 0.33114022132570875,
+    minimum_temperature: 0.743699044574942,
+    mean_wind_speed: -0.16752967289309215,
+    max_wind_speed: -0.024142520324701364,
+    psi_today: 0.8151917956241742
+  },
+  west: {
+    intercept: -13.462365744205115,
+    daily_rainfall_total: -0.024374741271459444,
+    mean_temperature: 0.7524101942994914,
+    maximum_temperature: 0.2304441379908926,
+    minimum_temperature: -0.02330644321282127,
+    mean_wind_speed: -0.13149097131346893,
+    max_wind_speed: -0.10378091103607756,
+    psi_today: 0.8331987819783159
+  },
+  central: {
+    intercept: -4.79095927551797,
+    daily_rainfall_total: 0.0027268892508984653,
+    mean_temperature: -0.03366241416751342,
+    maximum_temperature: 0.41406749795522924,
+    minimum_temperature: 0.2508195336970501,
+    mean_wind_speed: -0.2101313434873373,
+    max_wind_speed: -0.05188125055891146,
+    psi_today: 0.8076034290204062
+  }
 };
 
-function getBand(v){
-  if (v <= 50)  return 'Good';
+const REGION_KEYS = ['north', 'south', 'east', 'west', 'central'];
+const REGION_NAMES = { north: 'North', south: 'South', east: 'East', west: 'West', central: 'Central' };
+// NEA's own label positions for each region (from the real-time API metadata)
+const REGION_CENTRES = {
+  north:   [1.41803, 103.82],
+  south:   [1.29587, 103.82],
+  west:    [1.35735, 103.70],
+  central: [1.35735, 103.82],
+  east:    [1.35735, 103.94]
+};
+const SG_BOUNDS = { south: 1.13, north: 1.50, west: 103.58, east: 104.10 };
+
+// Simplified land outline (all islands) and the five regions cut from it
+const LAND_SHAPES = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.5981,1.2238],[103.5984,1.2193],[103.601,1.2156],[103.6037,1.2142],[103.6417,1.2032],[103.6464,1.2033],[103.6503,1.2059],[103.6518,1.2087],[103.6521,1.2118],[103.6511,1.2148],[103.6491,1.2173],[103.6463,1.2187],[103.6199,1.2268],[103.6224,1.2479],[103.6455,1.2553],[103.6481,1.2567],[103.6499,1.2593],[103.6556,1.2417],[103.6664,1.2183],[103.6701,1.2155],[103.6731,1.2149],[103.6761,1.2155],[103.6787,1.2173],[103.6967,1.2355],[103.6979,1.2383],[103.6977,1.2431],[103.7192,1.2529],[103.7237,1.2519],[103.7268,1.2529],[103.7463,1.2689],[103.748,1.2732],[103.7483,1.2731],[103.7745,1.2674],[103.7713,1.2616],[103.7709,1.2584],[103.7726,1.254],[103.7765,1.2513],[103.7797,1.2509],[103.7828,1.2518],[103.7972,1.2633],[103.7995,1.2629],[103.7994,1.2627],[103.7989,1.2595],[103.7998,1.2563],[103.8019,1.2538],[103.8202,1.2389],[103.8346,1.2313],[103.8377,1.2309],[103.8407,1.2318],[103.8432,1.2338],[103.8551,1.248],[103.8561,1.2524],[103.8556,1.2546],[103.8564,1.255],[103.891,1.2857],[103.9711,1.3079],[104.032,1.3079],[104.035,1.3085],[104.0376,1.3102],[104.0394,1.3127],[104.04,1.3173],[104.038,1.3215],[104.0306,1.3295],[104.0374,1.3441],[104.0395,1.3422],[104.0425,1.341],[104.0473,1.3416],[104.05,1.3435],[104.0516,1.3463],[104.0518,1.3511],[104.0467,1.3608],[104.0326,1.3707],[104.0301,1.3718],[104.012,1.3767],[104.0048,1.3944],[104.0012,1.3974],[103.9966,1.398],[103.9604,1.3915],[103.9637,1.3933],[103.9767,1.4063],[103.9886,1.4007],[103.9915,1.3999],[103.996,1.401],[103.9992,1.4043],[104.0001,1.4073],[103.9997,1.4104],[103.9972,1.4142],[103.9779,1.4251],[103.9747,1.4261],[103.9251,1.43],[103.922,1.429],[103.9196,1.4269],[103.9191,1.4259],[103.9167,1.4282],[103.9136,1.4291],[103.8645,1.4326],[103.8628,1.4502],[103.8613,1.453],[103.8591,1.455],[103.8586,1.4577],[103.8571,1.4603],[103.8547,1.4622],[103.8217,1.4792],[103.8169,1.48],[103.7639,1.461],[103.7608,1.4578],[103.7575,1.4475],[103.7147,1.4569],[103.7116,1.457],[103.7088,1.4559],[103.6698,1.4319],[103.6674,1.4297],[103.6661,1.4268],[103.6664,1.4221],[103.6759,1.4069],[103.629,1.3554],[103.6271,1.3518],[103.5981,1.2238]],[[103.7958,1.3642],[103.8039,1.3774],[103.8167,1.379],[103.8101,1.3679],[103.7994,1.3616],[103.7958,1.3642]]],[[[103.6991,1.2066],[103.6995,1.2019],[103.7026,1.1982],[103.7056,1.197],[103.7185,1.1949],[103.7361,1.1962],[103.7402,1.1988],[103.7421,1.2032],[103.7411,1.208],[103.7389,1.2104],[103.7259,1.2204],[103.7213,1.2221],[103.7166,1.2208],[103.7026,1.2118],[103.7003,1.2096],[103.6991,1.2066]]],[[[103.7511,1.22],[103.7513,1.2154],[103.7613,1.1864],[103.764,1.1826],[103.7684,1.1809],[103.7729,1.1819],[103.7753,1.1839],[103.7883,1.1999],[103.7901,1.2044],[103.789,1.2091],[103.7868,1.2115],[103.7838,1.2129],[103.7731,1.2154],[103.7647,1.2237],[103.7607,1.2259],[103.7576,1.226],[103.7547,1.2249],[103.7524,1.2228],[103.7511,1.22]]],[[[104.005,1.4089],[104.006,1.4059],[104.0075,1.4041],[104.0069,1.4009],[104.0082,1.3966],[104.0192,1.3796],[104.0227,1.3766],[104.0257,1.3759],[104.0287,1.3764],[104.0313,1.3779],[104.0332,1.3804],[104.0341,1.3833],[104.0337,1.3864],[104.0289,1.3958],[104.032,1.3966],[104.046,1.372],[104.0482,1.3695],[104.0512,1.3681],[104.0545,1.3681],[104.0684,1.3737],[104.0659,1.3634],[104.067,1.3549],[104.068,1.352],[104.0656,1.35],[104.0642,1.3471],[104.064,1.344],[104.065,1.341],[104.067,1.3386],[104.076,1.3316],[104.0789,1.3302],[104.082,1.33],[104.0866,1.3313],[104.0906,1.3343],[104.0919,1.3373],[104.0919,1.3426],[104.0834,1.3631],[104.0848,1.3724],[104.0949,1.3924],[104.0961,1.399],[104.0961,1.405],[104.0947,1.4095],[104.0911,1.4132],[104.0895,1.4211],[104.0875,1.4239],[104.0846,1.4257],[104.0456,1.4387],[104.0425,1.4391],[104.0381,1.4374],[104.0273,1.4255],[104.0191,1.4353],[104.0163,1.4368],[104.0115,1.4367],[104.0076,1.4339],[104.0059,1.4294],[104.005,1.4089]]]]}}]};
+const REGION_SHAPES = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"region":"north"},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.7263,1.4544],[103.76,1.3877],[103.88,1.3877],[103.9014,1.4299],[103.8645,1.4326],[103.8628,1.4502],[103.8613,1.453],[103.8591,1.455],[103.8586,1.4577],[103.8571,1.4603],[103.8547,1.4622],[103.8217,1.4792],[103.8169,1.48],[103.7639,1.461],[103.7608,1.4578],[103.7575,1.4475],[103.7263,1.4544]]]]}},{"type":"Feature","properties":{"region":"south"},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.6991,1.2066],[103.6995,1.2019],[103.7026,1.1982],[103.7056,1.197],[103.7185,1.1949],[103.7361,1.1962],[103.7402,1.1988],[103.7421,1.2032],[103.7411,1.208],[103.7389,1.2104],[103.7259,1.2204],[103.7213,1.2221],[103.7166,1.2208],[103.7026,1.2118],[103.7003,1.2096],[103.6991,1.2066]]],[[[103.7219,1.2523],[103.7237,1.2519],[103.7268,1.2529],[103.7463,1.2689],[103.748,1.2732],[103.7483,1.2731],[103.7745,1.2674],[103.7713,1.2616],[103.7709,1.2584],[103.7726,1.254],[103.7765,1.2513],[103.7797,1.2509],[103.7828,1.2518],[103.7972,1.2633],[103.7995,1.2629],[103.7994,1.2627],[103.7989,1.2595],[103.7998,1.2563],[103.8019,1.2538],[103.8202,1.2389],[103.8346,1.2313],[103.8377,1.2309],[103.8407,1.2318],[103.8432,1.2338],[103.8551,1.248],[103.8561,1.2524],[103.8556,1.2546],[103.8564,1.255],[103.891,1.2857],[103.8997,1.2881],[103.88,1.3266],[103.76,1.3266],[103.7219,1.2523]]],[[[103.7511,1.22],[103.7513,1.2154],[103.7613,1.1864],[103.764,1.1826],[103.7684,1.1809],[103.7729,1.1819],[103.7753,1.1839],[103.7883,1.1999],[103.7901,1.2044],[103.789,1.2091],[103.7868,1.2115],[103.7838,1.2129],[103.7731,1.2154],[103.7647,1.2237],[103.7607,1.2259],[103.7576,1.226],[103.7547,1.2249],[103.7524,1.2228],[103.7511,1.22]]]]}},{"type":"Feature","properties":{"region":"west"},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.5981,1.2238],[103.5984,1.2193],[103.601,1.2156],[103.6037,1.2142],[103.6417,1.2032],[103.6464,1.2033],[103.6503,1.2059],[103.6518,1.2087],[103.6521,1.2118],[103.6511,1.2148],[103.6491,1.2173],[103.6463,1.2187],[103.6199,1.2268],[103.6224,1.2479],[103.6455,1.2553],[103.6481,1.2567],[103.6499,1.2593],[103.6556,1.2417],[103.6664,1.2183],[103.6701,1.2155],[103.6731,1.2149],[103.6761,1.2155],[103.6787,1.2173],[103.6967,1.2355],[103.6979,1.2383],[103.6977,1.2431],[103.7192,1.2529],[103.7219,1.2523],[103.76,1.3266],[103.76,1.3877],[103.7263,1.4544],[103.7147,1.4569],[103.7116,1.457],[103.7088,1.4559],[103.6698,1.4319],[103.6674,1.4297],[103.6661,1.4268],[103.6664,1.4221],[103.6759,1.4069],[103.629,1.3554],[103.6271,1.3518],[103.5981,1.2238]]]]}},{"type":"Feature","properties":{"region":"central"},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.76,1.3266],[103.88,1.3266],[103.88,1.3877],[103.76,1.3877],[103.76,1.3266]],[[103.7958,1.3642],[103.8039,1.3774],[103.8167,1.379],[103.8101,1.3679],[103.7994,1.3616],[103.7958,1.3642]]]]}},{"type":"Feature","properties":{"region":"east"},"geometry":{"type":"MultiPolygon","coordinates":[[[[103.88,1.3266],[103.8997,1.2881],[103.9711,1.3079],[104.032,1.3079],[104.035,1.3085],[104.0376,1.3102],[104.0394,1.3127],[104.04,1.3173],[104.038,1.3215],[104.0306,1.3295],[104.0374,1.3441],[104.0395,1.3422],[104.0425,1.341],[104.0473,1.3416],[104.05,1.3435],[104.0516,1.3463],[104.0518,1.3511],[104.0467,1.3608],[104.0326,1.3707],[104.0301,1.3718],[104.012,1.3767],[104.0048,1.3944],[104.0012,1.3974],[103.9966,1.398],[103.9604,1.3915],[103.9637,1.3933],[103.9767,1.4063],[103.9886,1.4007],[103.9915,1.3999],[103.996,1.401],[103.9992,1.4043],[104.0001,1.4073],[103.9997,1.4104],[103.9972,1.4142],[103.9779,1.4251],[103.9747,1.4261],[103.9251,1.43],[103.922,1.429],[103.9196,1.4269],[103.9191,1.4259],[103.9167,1.4282],[103.9136,1.4291],[103.9014,1.4299],[103.88,1.3877],[103.88,1.3266]]],[[[104.005,1.4089],[104.006,1.4059],[104.0075,1.4041],[104.0069,1.4009],[104.0082,1.3966],[104.0192,1.3796],[104.0227,1.3766],[104.0257,1.3759],[104.0287,1.3764],[104.0313,1.3779],[104.0332,1.3804],[104.0341,1.3833],[104.0337,1.3864],[104.0289,1.3958],[104.032,1.3966],[104.046,1.372],[104.0482,1.3695],[104.0512,1.3681],[104.0545,1.3681],[104.0684,1.3737],[104.0659,1.3634],[104.067,1.3549],[104.068,1.352],[104.0656,1.35],[104.0642,1.3471],[104.064,1.344],[104.065,1.341],[104.067,1.3386],[104.076,1.3316],[104.0789,1.3302],[104.082,1.33],[104.0866,1.3313],[104.0906,1.3343],[104.0919,1.3373],[104.0919,1.3426],[104.0834,1.3631],[104.0848,1.3724],[104.0949,1.3924],[104.0961,1.399],[104.0961,1.405],[104.0947,1.4095],[104.0911,1.4132],[104.0895,1.4211],[104.0875,1.4239],[104.0846,1.4257],[104.0456,1.4387],[104.0425,1.4391],[104.0381,1.4374],[104.0273,1.4255],[104.0191,1.4353],[104.0163,1.4368],[104.0115,1.4367],[104.0076,1.4339],[104.0059,1.4294],[104.005,1.4089]]]]}}]};
+
+// Typical values used only if a live reading can't be fetched
+const FALLBACKS = { psi: 55, temp: 28, rain: 4, wind: 12 };
+
+// Place names for the clean map: [name, lat, lng]
+const PLACE_LABELS = [
+  ['Woodlands', 1.4360, 103.7865], ['Sembawang', 1.4491, 103.8185], ['Sengkang', 1.3917, 103.8950],
+  ['Punggol', 1.4043, 103.9021], ['Bedok', 1.3236, 103.9300], ['Changi', 1.3644, 103.9915],
+  ['Hougang', 1.3612, 103.8863], ['Toa Payoh', 1.3343, 103.8563], ['Choa Chu Kang', 1.3840, 103.7470],
+  ['Bukit Batok', 1.3590, 103.7637], ['Clementi', 1.3162, 103.7649], ['Marina Bay', 1.2830, 103.8607],
+  ['Geylang', 1.3201, 103.8918], ['Tuas', 1.2990, 103.6500], ['Bukit Timah', 1.3294, 103.8021],
+  ['Sentosa', 1.2494, 103.8303]
+];
+
+// Example outdoor recreation areas (positions approximate): [name, lat, lng]
+const EXAMPLES = [
+  ['Woodlands Waterfront Park', 1.4527, 103.7882],
+  ['Sembawang Park', 1.4620, 103.8330],
+  ['Punggol Waterway Park', 1.4076, 103.9094],
+  ['Bishan-Ang Mo Kio Park', 1.3622, 103.8441],
+  ['MacRitchie Reservoir Park', 1.3417, 103.8317],
+  ['Pasir Ris Park', 1.3814, 103.9517],
+  ['Bedok Reservoir Park', 1.3425, 103.9255],
+  ['Jurong Lake Gardens', 1.3375, 103.7266],
+  ['West Coast Park', 1.2917, 103.7640],
+  ['Labrador Nature Reserve', 1.2663, 103.8025],
+  ['Gardens by the Bay', 1.2816, 103.8636],
+  ['East Coast Park', 1.3008, 103.9122]
+];
+
+// ---------------------------------------------------------------
+// Colour scale: blue -> green -> yellow -> orange -> red -> purple -> maroon
+// ---------------------------------------------------------------
+const GAUGE_STOPS = [
+  {r:37,  g:99,  b:235},
+  {r:22,  g:163, b:74},
+  {r:250, g:204, b:21},
+  {r:249, g:115, b:22},
+  {r:220, g:38,  b:38},
+  {r:147, g:51,  b:234},
+  {r:107, g:20,  b:20}
+];
+
+function getGaugeColor(v) {
+  const clamped = Math.max(0, Math.min(300, v));
+  const segment = 300 / (GAUGE_STOPS.length - 1);
+  const idx = Math.min(Math.floor(clamped / segment), GAUGE_STOPS.length - 2);
+  const t = (clamped - idx * segment) / segment;
+  const a = GAUGE_STOPS[idx], b = GAUGE_STOPS[idx + 1];
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+  return 'rgb(' + r + ', ' + g + ', ' + bl + ')';
+}
+
+function getBand(v) {
+  if (v <= 50) return 'Good';
   if (v <= 100) return 'Moderate';
   if (v <= 200) return 'Unhealthy';
   if (v <= 300) return 'Very unhealthy';
   return 'Hazardous';
 }
 
-// Direct RGB interpolation from blue (low PSI) to red (high PSI), passing through
-// purple in the middle -- deliberately avoids sweeping through the hue circle,
-// which would pass through green (misleadingly signalling "good") at mid-range PSI.
-function getGaugeColor(v){
-  const clamped = Math.max(0, Math.min(300, v));
-  const t = clamped / 300;
-  const blue  = { r: 37,  g: 99,  b: 235 };
-  const red   = { r: 220, g: 38,  b: 38 };
-  const r = Math.round(blue.r + (red.r - blue.r) * t);
-  const g = Math.round(blue.g + (red.g - blue.g) * t);
-  const b = Math.round(blue.b + (red.b - blue.b) * t);
-  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+// Simplified outdoor-activity guide following NEA's PSI health advisory bands
+function getAdvice(v) {
+  if (v <= 100) return 'Normal outdoor activity is fine.';
+  if (v <= 200) return 'Reduce prolonged or strenuous outdoor exertion.';
+  if (v <= 300) return 'Avoid prolonged or strenuous outdoor exertion.';
+  return 'Minimise outdoor activity.';
 }
 
-async function fetchJson(endpoint){
+// ---------------------------------------------------------------
+// App state and prediction
+// ---------------------------------------------------------------
+const state = {
+  loaded: false,
+  current: {},
+  weather: { temp: FALLBACKS.temp, rain: FALLBACKS.rain, wind: FALLBACKS.wind },
+  lastSelection: null
+};
+
+function predictFor(region) {
+  const m = MODELS[region];
+  const f = {
+    daily_rainfall_total: state.weather.rain,
+    mean_temperature: state.weather.temp,
+    maximum_temperature: state.weather.temp,
+    minimum_temperature: state.weather.temp,
+    mean_wind_speed: state.weather.wind,
+    max_wind_speed: state.weather.wind,
+    psi_today: state.current[region]
+  };
+  let p = m.intercept;
+  for (const k in f) p += m[k] * f[k];
+  return Math.max(0, Math.round(p));
+}
+
+function nearestRegion(lat, lng) {
+  let best = null, bestD = Infinity;
+  REGION_KEYS.forEach(k => {
+    const dLat = lat - REGION_CENTRES[k][0];
+    const dLng = lng - REGION_CENTRES[k][1];
+    const d = dLat * dLat + dLng * dLng;
+    if (d < bestD) { bestD = d; best = k; }
+  });
+  return best;
+}
+
+function insideSingapore(lat, lng) {
+  return lat >= SG_BOUNDS.south && lat <= SG_BOUNDS.north && lng >= SG_BOUNDS.west && lng <= SG_BOUNDS.east;
+}
+
+function colourForRegion(region) {
+  return getGaugeColor(predictFor(region));
+}
+
+// ---------------------------------------------------------------
+// Live data from NEA
+// ---------------------------------------------------------------
+async function fetchJson(endpoint) {
   const res = await fetch('https://api-open.data.gov.sg/v2/real-time/api/' + endpoint);
   if (!res.ok) throw new Error(endpoint + ' request failed');
   const json = await res.json();
@@ -172,106 +369,420 @@ async function fetchJson(endpoint){
   return json.data;
 }
 
-// PSI/PM2.5 style endpoints: data.items[0].readings.{key} = {north, south, east, west, central, [national]}
-// National PSI, per NEA's own definition, is the max of the 5 regional readings -
-// compute it ourselves rather than relying on an optional "national" field that
-// isn't always present in the live response.
-async function fetchAirQualityNational(endpoint, readingKey){
-  const data = await fetchJson(endpoint);
-  const readings = data.items[0].readings[readingKey];
-  if (readings.national !== undefined && readings.national !== null) {
-    return readings.national;
-  }
-  const regionValues = ['north','south','east','west','central']
-    .map(r => readings[r])
-    .filter(v => typeof v === 'number');
-  if (regionValues.length === 0) throw new Error(readingKey + ' had no usable regional values');
-  return Math.max(...regionValues);
+async function fetchRegionalPsi() {
+  const data = await fetchJson('psi');
+  const r = data.items[0].readings.psi_twenty_four_hourly;
+  const out = {};
+  REGION_KEYS.forEach(k => {
+    if (typeof r[k] !== 'number') throw new Error('psi missing ' + k);
+    out[k] = r[k];
+  });
+  return out;
 }
 
-// Weather station endpoints: data.readings[0].data = [{stationId, value}, ...]
-// Average across all reporting stations as a single Singapore-wide current reading.
-async function fetchWeatherAverage(endpoint){
+async function fetchWeatherAverage(endpoint) {
   const data = await fetchJson(endpoint);
   const values = data.readings[0].data.map(r => r.value);
-  return values.reduce((a,b) => a+b, 0) / values.length;
+  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-async function loadAndPredict(){
-  const statusEl = document.getElementById('status');
-  const gaugeEl = document.getElementById('gauge');
-  const valueEl = document.getElementById('psi-value');
-  const bandEl = document.getElementById('psi-band');
-  const inputsEl = document.getElementById('inputs');
+// ---------------------------------------------------------------
+// Map
+// ---------------------------------------------------------------
+let map, styleMode = 'clean', tileLayer = null, canvasRenderer, selMarker = null, selPopup = null;
+let baseGroup, regionGroup, labelGroup, badgeGroup, recGroup;
+const placeLayers = {};
 
-  statusEl.style.display = 'block';
-  statusEl.textContent = 'Loading live data...';
-  gaugeEl.style.display = 'none';
-  inputsEl.style.display = 'none';
+function initMap() {
+  map = L.map('map', { minZoom: 10, maxZoom: 18, zoomControl: true, zoomSnap: 0.25 });
+  map.fitBounds([[1.15, 103.60], [1.49, 104.08]]);
+  map.setMaxBounds([[1.0, 103.4], [1.6, 104.3]]);
+  map.createPane('basePane');   map.getPane('basePane').style.zIndex = 250;
+  map.createPane('regionPane'); map.getPane('regionPane').style.zIndex = 300;
+  canvasRenderer = L.canvas({ padding: 0.5 });
 
-  try {
-    const results = await Promise.allSettled([
-      fetchAirQualityNational('psi', 'psi_twenty_four_hourly'),
-      fetchWeatherAverage('air-temperature'),
-      fetchWeatherAverage('rainfall'),
-      fetchWeatherAverage('wind-speed')
-    ]);
+  baseGroup = L.layerGroup();
+  regionGroup = L.layerGroup();
+  labelGroup = L.layerGroup();
+  badgeGroup = L.layerGroup().addTo(map);
+  recGroup = L.layerGroup().addTo(map);
+  selPopup = L.popup({ offset: [0, -6] });
 
-    const labels = ['psi', 'temperature', 'rainfall', 'wind speed'];
-    const fallbacks = [55, 28, 4, 12];
-    const fallbackUsed = [];
+  buildBase();
+  L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+  addNorthArrow();
+  map.attributionControl.addAttribution('Coastline &copy; OpenStreetMap contributors via geo-maps');
 
-    const values = results.map((r, i) => {
-      if (r.status === 'fulfilled' && typeof r.value === 'number' && !isNaN(r.value)) {
-        return r.value;
-      }
-      fallbackUsed.push(labels[i]);
-      return fallbacks[i];
+  map.on('click', e => showSelection(e.latlng.lat, e.latlng.lng, 'Selected spot'));
+  map.on('zoomend', updateLabels);
+  setMapStyle('clean');
+}
+
+function addNorthArrow() {
+  const c = L.control({ position: 'topright' });
+  c.onAdd = () => {
+    const d = L.DomUtil.create('div', 'north-arrow');
+    d.innerHTML = 'N<span class="arr">&#9650;</span>';
+    return d;
+  };
+  c.addTo(map);
+}
+
+function buildBase() {
+  // faint grid lines every 0.1 degrees, like a printed map
+  for (let i = 0; i <= 3; i++) {
+    const lat = 1.2 + i * 0.1;
+    L.polyline([[lat, 103.4], [lat, 104.3]], { pane: 'basePane', color: '#FFFFFF', weight: 1, opacity: 0.8, interactive: false }).addTo(baseGroup);
+  }
+  for (let i = 0; i <= 7; i++) {
+    const lng = 103.5 + i * 0.1;
+    L.polyline([[1.0, lng], [1.6, lng]], { pane: 'basePane', color: '#FFFFFF', weight: 1, opacity: 0.8, interactive: false }).addTo(baseGroup);
+  }
+  // land
+  L.geoJSON(LAND_SHAPES, {
+    pane: 'basePane', interactive: false,
+    style: { fillColor: '#F4F1E8', fillOpacity: 1, color: '#8CA0B0', weight: 1.2 }
+  }).addTo(baseGroup);
+  // place names
+  PLACE_LABELS.forEach(p => {
+    L.marker([p[1], p[2]], {
+      icon: L.divIcon({ className: 'place-label', html: p[0], iconSize: [90, 12], iconAnchor: [45, 6] }),
+      interactive: false, keyboard: false
+    }).addTo(labelGroup);
+  });
+}
+
+function updateLabels() {
+  const show = styleMode === 'clean' && map.getZoom() >= 10.5;
+  if (show) labelGroup.addTo(map); else map.removeLayer(labelGroup);
+}
+
+function ensureTiles() {
+  if (tileLayer) return;
+  tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  });
+  let errors = 0, loads = 0;
+  tileLayer.on('tileerror', () => {
+    errors++;
+    if (errors >= 4 && loads === 0 && styleMode === 'street') {
+      setMapStyle('clean');
+      document.querySelector('input[name="mapstyle"][value="clean"]').checked = true;
+      document.getElementById('map-note').textContent =
+        'The street map could not be loaded (it may be blocked on this network), so the clean map is shown instead.';
+    }
+  });
+  tileLayer.on('tileload', () => { loads++; });
+}
+
+function setMapStyle(mode) {
+  styleMode = mode;
+  if (mode === 'clean') {
+    if (tileLayer) map.removeLayer(tileLayer);
+    baseGroup.addTo(map);
+    regionGroup.addTo(map);
+    document.getElementById('map-note').textContent = '';
+    drawRegionShapes();
+  } else {
+    map.removeLayer(baseGroup);
+    map.removeLayer(regionGroup);
+    document.getElementById('map-note').textContent = '';
+    ensureTiles();
+    tileLayer.addTo(map);
+  }
+  updateLabels();
+}
+
+function drawRegionShapes() {
+  regionGroup.clearLayers();
+  if (!state.loaded) return;
+  L.geoJSON(REGION_SHAPES, {
+    pane: 'regionPane', interactive: false,
+    style: f => ({
+      fillColor: colourForRegion(f.properties.region),
+      fillOpacity: 0.55,
+      color: '#FFFFFF',
+      weight: 1.5
+    })
+  }).addTo(regionGroup);
+}
+
+function drawRegionBadges() {
+  badgeGroup.clearLayers();
+  REGION_KEYS.forEach(k => {
+    const p = predictFor(k);
+    const icon = L.divIcon({
+      className: '',
+      html: '<div class="region-badge" style="border-color:' + getGaugeColor(p) + '">' +
+            '<span class="num">' + p + '</span><span class="nm">' + REGION_NAMES[k] + '</span></div>',
+      iconSize: [58, 58],
+      iconAnchor: [29, 29]
     });
+    L.marker(REGION_CENTRES[k], { icon: icon, keyboard: false })
+      .on('click', () => showSelection(REGION_CENTRES[k][0], REGION_CENTRES[k][1], REGION_NAMES[k] + ' region', { noPin: true }))
+      .addTo(badgeGroup);
+  });
+}
 
-    const [psiToday, currentTemp, currentRain, currentWind] = values;
+function spotIcon(p) {
+  return L.divIcon({
+    className: '',
+    html: '<div class="spot" style="border-color:' + getGaugeColor(p) + '">' + p + '</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+}
 
-    if (fallbackUsed.length > 0) {
-      statusEl.style.display = 'block';
-      statusEl.textContent = 'Note: ' + fallbackUsed.join(', ') + ' could not be reached just now, using a typical estimate instead.';
-    } else {
-      statusEl.style.display = 'none';
+function drawRecreation() {
+  recGroup.clearLayers();
+  if (!state.loaded) return;
+  EXAMPLES.forEach(e => {
+    const region = nearestRegion(e[1], e[2]);
+    const p = predictFor(region);
+    L.marker([e[1], e[2]], { icon: spotIcon(p), keyboard: false })
+      .bindTooltip(e[0], { direction: 'top', offset: [0, -14] })
+      .on('click', () => showSelection(e[1], e[2], e[0], { noPin: true }))
+      .addTo(recGroup);
+  });
+}
+
+function pinIcon(color) {
+  return L.divIcon({
+    className: '',
+    html: '<div class="pin" style="background:' + color + '"></div>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+}
+
+function showSelection(lat, lng, label, opts) {
+  opts = opts || {};
+  const panel = document.getElementById('selected');
+  if (!insideSingapore(lat, lng)) {
+    panel.innerHTML = 'That spot is outside Singapore. Pick somewhere on the island.';
+    return;
+  }
+  if (!state.loaded) {
+    panel.innerHTML = 'Live data is still loading, try again in a moment.';
+    return;
+  }
+  state.lastSelection = { lat: lat, lng: lng, label: label, opts: opts };
+  const region = nearestRegion(lat, lng);
+  const p = predictFor(region);
+  const cur = Math.round(state.current[region]);
+  const color = getGaugeColor(p);
+  const html =
+    '<b>' + label + '</b><br>' +
+    REGION_NAMES[region] + ' region<br>' +
+    'Predicted PSI tomorrow: <b>' + p + '</b> (' + getBand(p) + ')<br>' +
+    'Current reading: ' + cur + '<br>' +
+    'Outdoor activity: ' + getAdvice(p);
+
+  panel.innerHTML = html;
+  panel.style.borderLeft = '4px solid ' + color;
+
+  if (opts.noPin) {
+    if (selMarker) { map.removeLayer(selMarker); selMarker = null; }
+    selPopup.setLatLng([lat, lng]).setContent(html).openOn(map);
+    return;
+  }
+  map.closePopup(selPopup);
+  if (!selMarker) {
+    selMarker = L.marker([lat, lng], { icon: pinIcon(color) }).addTo(map).bindPopup(html);
+  } else {
+    if (!map.hasLayer(selMarker)) selMarker.addTo(map);
+    selMarker.setLatLng([lat, lng]);
+    selMarker.setIcon(pinIcon(color));
+    selMarker.setPopupContent(html);
+  }
+  selMarker.openPopup();
+}
+
+// ---------------------------------------------------------------
+// Basketball courts and playgrounds from OpenStreetMap (Overpass API)
+// ---------------------------------------------------------------
+const PLACE_KINDS = {
+  bball: { stroke: '#111111', radius: 7, defaultName: 'Basketball court', plural: 'basketball courts' },
+  play:  { stroke: '#FFFFFF', radius: 6, defaultName: 'Playground', plural: 'playgrounds' }
+};
+
+async function loadPlaces(kind) {
+  const bbox = '1.15,103.6,1.48,104.1';
+  const query = kind === 'bball'
+    ? '[out:json][timeout:30];(node["leisure"="pitch"]["sport"="basketball"](' + bbox + ');way["leisure"="pitch"]["sport"="basketball"](' + bbox + '););out center;'
+    : '[out:json][timeout:30];(node["leisure"="playground"](' + bbox + ');way["leisure"="playground"](' + bbox + '););out center;';
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'data=' + encodeURIComponent(query)
+  });
+  if (!res.ok) throw new Error('Overpass returned ' + res.status);
+  const json = await res.json();
+  const group = L.layerGroup();
+  const cfg = PLACE_KINDS[kind];
+  let count = 0;
+  json.elements.forEach(el => {
+    const lat = el.lat !== undefined ? el.lat : (el.center ? el.center.lat : null);
+    const lng = el.lon !== undefined ? el.lon : (el.center ? el.center.lon : null);
+    if (lat === null || lng === null) return;
+    const name = (el.tags && el.tags.name) ? el.tags.name : cfg.defaultName;
+    const region = nearestRegion(lat, lng);
+    L.circleMarker([lat, lng], {
+      renderer: canvasRenderer,
+      radius: cfg.radius,
+      color: cfg.stroke,
+      weight: 2.5,
+      fillColor: state.loaded ? colourForRegion(region) : '#BDBDBD',
+      fillOpacity: 1,
+      bubblingMouseEvents: false,
+      _region: region
+    }).on('click', () => showSelection(lat, lng, name, { noPin: true })).addTo(group);
+    count++;
+  });
+  placeLayers[kind] = { group: group, count: count };
+}
+
+function restylePlaces() {
+  Object.keys(placeLayers).forEach(k => {
+    placeLayers[k].group.eachLayer(m => m.setStyle({ fillColor: colourForRegion(m.options._region) }));
+  });
+}
+
+async function togglePlaces(kind, on) {
+  const status = document.getElementById('layer-status');
+  const cfg = PLACE_KINDS[kind];
+  if (!on) {
+    if (placeLayers[kind]) map.removeLayer(placeLayers[kind].group);
+    status.textContent = '';
+    return;
+  }
+  try {
+    if (!placeLayers[kind]) {
+      status.textContent = 'Loading ' + cfg.plural + ' from OpenStreetMap...';
+      await loadPlaces(kind);
     }
-
-    const features = {
-      daily_rainfall_total: currentRain,
-      mean_temperature: currentTemp,
-      maximum_temperature: currentTemp,
-      minimum_temperature: currentTemp,
-      mean_wind_speed: currentWind,
-      max_wind_speed: currentWind,
-      psi_today: psiToday
-    };
-
-    let prediction = coef.intercept;
-    for (const key in features){
-      prediction += coef[key] * features[key];
-    }
-    prediction = Math.max(0, Math.round(prediction));
-
-    valueEl.textContent = prediction;
-    bandEl.textContent = getBand(prediction);
-    gaugeEl.style.borderColor = getGaugeColor(prediction);
-    gaugeEl.style.display = 'flex';
-
-    inputsEl.innerHTML =
-      '<div><span>Today\'s national PSI</span><span>' + Math.round(psiToday) + '</span></div>' +
-      '<div><span>Current temperature</span><span>' + currentTemp.toFixed(1) + ' &deg;C</span></div>' +
-      '<div><span>Current rainfall reading</span><span>' + currentRain.toFixed(1) + ' mm</span></div>' +
-      '<div><span>Current wind speed</span><span>' + currentWind.toFixed(1) + ' km/h</span></div>';
-    inputsEl.style.display = 'block';
-
+    placeLayers[kind].group.addTo(map);
+    status.textContent = 'Showing ' + placeLayers[kind].count + ' ' + cfg.plural + ' from OpenStreetMap. Locations are volunteer-mapped and may be incomplete.';
   } catch (err) {
-    statusEl.textContent = 'Could not load live data (' + err.message + '). Check your connection and try refresh.';
+    status.textContent = 'Could not load ' + cfg.plural + ' (' + err.message + '). This data comes from an outside service that may be busy or blocked on this network. Untick and tick the box to try again.';
+    document.getElementById(kind === 'bball' ? 'toggle-bball' : 'toggle-play').checked = false;
   }
 }
 
-loadAndPredict();
+// ---------------------------------------------------------------
+// Load live data and redraw everything that depends on predictions
+// ---------------------------------------------------------------
+async function loadAndPredict() {
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = 'Loading live data...';
+
+  const results = await Promise.allSettled([
+    fetchRegionalPsi(),
+    fetchWeatherAverage('air-temperature'),
+    fetchWeatherAverage('rainfall'),
+    fetchWeatherAverage('wind-speed')
+  ]);
+
+  const fallbackUsed = [];
+  if (results[0].status === 'fulfilled') {
+    state.current = results[0].value;
+  } else {
+    fallbackUsed.push('PSI');
+    REGION_KEYS.forEach(k => { state.current[k] = FALLBACKS.psi; });
+  }
+  function pick(i, key, label) {
+    const r = results[i];
+    if (r.status === 'fulfilled' && typeof r.value === 'number' && !isNaN(r.value)) return r.value;
+    fallbackUsed.push(label);
+    return FALLBACKS[key];
+  }
+  state.weather.temp = pick(1, 'temp', 'temperature');
+  state.weather.rain = pick(2, 'rain', 'rainfall');
+  state.weather.wind = pick(3, 'wind', 'wind speed');
+  state.loaded = true;
+
+  drawRegionShapes();
+  drawRegionBadges();
+  drawRecreation();
+  restylePlaces();
+
+  const inputs = document.getElementById('inputs');
+  inputs.style.display = 'block';
+  inputs.innerHTML =
+    '<div class="row"><span>Current temperature</span><span>' + state.weather.temp.toFixed(1) + ' &deg;C</span></div>' +
+    '<div class="row"><span>Current rainfall reading</span><span>' + state.weather.rain.toFixed(1) + ' mm</span></div>' +
+    '<div class="row"><span>Current wind speed</span><span>' + state.weather.wind.toFixed(1) + ' km/h</span></div>';
+
+  statusEl.textContent = fallbackUsed.length > 0
+    ? 'Note: ' + fallbackUsed.join(', ') + ' could not be reached just now, using a typical estimate instead.'
+    : '';
+
+  if (state.lastSelection) {
+    const s = state.lastSelection;
+    showSelection(s.lat, s.lng, s.label, s.opts);
+  }
+}
+
+// ---------------------------------------------------------------
+// Start up
+// ---------------------------------------------------------------
+function buildLegend() {
+  const stops = GAUGE_STOPS.map(s => 'rgb(' + s.r + ',' + s.g + ',' + s.b + ')').join(', ');
+  document.getElementById('legend-bar').style.background = 'linear-gradient(to right, ' + stops + ')';
+}
+
+function buildRecGuide() {
+  const samples = [[30, 'Good', '0\u201350'], [75, 'Moderate', '51\u2013100'], [150, 'Unhealthy', '101\u2013200'], [250, 'Very unhealthy', '201\u2013300']];
+  document.getElementById('rec-guide-rows').innerHTML = samples.map(s =>
+    '<div class="guide-row"><div class="spot" style="border-color:' + getGaugeColor(s[0]) + '">' + s[0] + '</div>' +
+    '<div><b>' + s[1] + '</b> (PSI ' + s[2] + ')<br>' + getAdvice(s[0]) + '</div></div>'
+  ).join('');
+}
+
+function locateUser() {
+  const panel = document.getElementById('selected');
+  if (!navigator.geolocation) {
+    panel.innerHTML = 'Your browser does not support location lookup.';
+    return;
+  }
+  panel.innerHTML = 'Finding your location...';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude, lng = pos.coords.longitude;
+      if (!insideSingapore(lat, lng)) {
+        panel.innerHTML = 'Your location appears to be outside Singapore.';
+        return;
+      }
+      map.setView([lat, lng], 14);
+      showSelection(lat, lng, 'Your location');
+    },
+    () => { panel.innerHTML = 'Could not get your location. Check that location access is allowed for this page.'; }
+  );
+}
+
+window.addEventListener('error', e => {
+  document.getElementById('status').textContent = 'Something went wrong: ' + e.message;
+});
+
+if (typeof L === 'undefined') {
+  document.getElementById('status').textContent = 'The map library could not be loaded. Check your internet connection and refresh.';
+} else {
+  buildLegend();
+  buildRecGuide();
+  initMap();
+  document.querySelectorAll('input[name="mapstyle"]').forEach(r =>
+    r.addEventListener('change', e => { if (e.target.checked) setMapStyle(e.target.value); }));
+  document.getElementById('toggle-rec').addEventListener('change', e => {
+    if (e.target.checked) recGroup.addTo(map); else map.removeLayer(recGroup);
+  });
+  document.getElementById('toggle-bball').addEventListener('change', e => togglePlaces('bball', e.target.checked));
+  document.getElementById('toggle-play').addEventListener('change', e => togglePlaces('play', e.target.checked));
+  document.getElementById('btn-refresh').addEventListener('click', loadAndPredict);
+  document.getElementById('btn-locate').addEventListener('click', locateUser);
+  loadAndPredict();
+}
 </script>
 </body>
 </html>
