@@ -112,6 +112,62 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
   .north-arrow .arr { display: block; font-size: 10px; }
+  .region-badge { transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  #map.dispersed .region-badge { opacity: 0; transform: scale(1.4); }
+  .leaflet-marker-icon.badge-root { transition: none; }
+  #map.dispersed .leaflet-marker-icon.badge-root { pointer-events: none !important; }
+  .town { width: 70px; text-align: center; }
+  .town .tb {
+    width: 34px; height: 34px; border-radius: 50%; border: 4px solid #333; margin: 0 auto;
+    background: #0D0D0D; color: #FFFFFF; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+    opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.5);
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.35s ease;
+  }
+  .town .tn {
+    font-size: 10px; font-weight: 600; color: #4C5B67; margin-top: 2px; white-space: nowrap; opacity: 0;
+    text-shadow: 0 0 3px #F4F1E8, 0 0 3px #F4F1E8, 0 0 3px #F4F1E8;
+    transition: opacity 0.25s ease;
+  }
+  .town.on .tb { opacity: 1; transform: translate(0, 0) scale(1); }
+  .town.on .tn { opacity: 1; transition-delay: 0.25s; }
+  .leaflet-marker-icon.town-root { pointer-events: none !important; }
+  .leaflet-marker-icon.town-root.town-on { pointer-events: auto !important; }
+  .shape { width: 14px; height: 14px; margin: 1px; border: 2px solid #111111; box-shadow: 0 0 0 1px rgba(255,255,255,0.75); }
+  .shape.square { border-radius: 3px; }
+  .shape.diamond { width: 12px; height: 12px; margin: 2px; transform: rotate(45deg); }
+  .dot.foot { border-radius: 3px; border: 2px solid #111111; }
+  .dot.comp { border-radius: 0; border: 2px solid #111111; transform: rotate(45deg) scale(0.85); }
+  .haze-badge { display: inline-block; padding: 3px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; color: #FFFFFF; letter-spacing: 0.04em; }
+  .haze-headline { color: #FFFFFF; font-weight: 600; }
+  .haze-chip { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 8px 12px; border: 1px solid #262626; border-radius: 10px; background: #0D0D0D; font-size: 13px; color: #C7C7C7; cursor: pointer; }
+  .haze-chip:hover { background: #141414; }
+  .haze-chip .more { margin-left: auto; color: #7FB4FF; white-space: nowrap; font-size: 12px; }
+  .haze-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  .haze-table th { text-align: left; color: #6E6E6E; font-weight: 600; padding: 4px 6px; border-bottom: 1px solid #262626; }
+  .haze-table td { padding: 5px 6px; border-bottom: 1px solid #1A1A1A; color: #C7C7C7; }
+  .haze-table .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .tag.toward { background: #4A1414; color: #FCA5A5; }
+  .tag.partly { background: #4A2E10; color: #FDBA74; }
+  .tag.away { background: #1C2A3A; color: #93B4D6; }
+  details.how summary { cursor: pointer; color: #9A9A9A; margin-top: 12px; font-size: 12px; }
+  .how-body { font-size: 12px; color: #9A9A9A; line-height: 1.6; margin-top: 6px; }
+  .how-body ol { margin: 6px 0 6px 18px; padding: 0; }
+  .hz-wrap { width: 70px; text-align: center; }
+  .hz {
+    width: 34px; height: 34px; border-radius: 50%; border: 4px solid #333; margin: 0 auto;
+    background: #0D0D0D; color: #FFFFFF; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.5);
+  }
+  .hz.sg { border-color: #FFFFFF; font-size: 11px; }
+  .hz-name {
+    font-size: 10px; font-weight: 600; color: #33414D; margin-top: 2px; white-space: nowrap;
+    text-shadow: 0 0 3px #CFE8F6, 0 0 3px #CFE8F6, 0 0 3px #CFE8F6;
+  }
+  .sea-label { font-size: 11px; font-style: italic; color: #6C8CA3; text-align: center; white-space: nowrap; pointer-events: none; }
+  .land-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #8A8F86; text-align: center; white-space: nowrap; pointer-events: none; }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #161616; color: #EDEDED; }
   .leaflet-popup-content { font-size: 13px; line-height: 1.5; margin: 10px 14px; }
   .leaflet-popup-content a { color: #7FB4FF; }
@@ -124,10 +180,16 @@
   <p class="subtitle">Predicted PSI for tomorrow in each region of Singapore and at outdoor recreation areas, based on current weather and PSI readings from NEA. Click anywhere on the map to check a specific spot.</p>
 
   <p id="status" class="status">Loading live data...</p>
+  <div id="haze-chip" class="haze-chip" style="display:none" title="Open the regional haze view"></div>
   <div id="map"></div>
   <p id="map-note" class="hint"></p>
 
   <div class="controls">
+    <div class="group">
+      <span class="group-title">View</span>
+      <label><input type="radio" name="viewmode" value="sg" checked>Singapore</label>
+      <label><input type="radio" name="viewmode" value="regional">Regional haze</label>
+    </div>
     <div class="group">
       <span class="group-title">Map style</span>
       <label><input type="radio" name="mapstyle" value="clean" checked>Clean map</label>
@@ -138,6 +200,8 @@
       <label><input type="checkbox" id="toggle-rec" checked><span class="dot rec"></span>Recreation areas</label>
       <label><input type="checkbox" id="toggle-bball"><span class="dot bball"></span>Basketball courts</label>
       <label><input type="checkbox" id="toggle-play"><span class="dot play"></span>Playgrounds</label>
+      <label><input type="checkbox" id="toggle-foot"><span class="dot foot"></span>Football fields</label>
+      <label><input type="checkbox" id="toggle-comp"><span class="dot comp"></span>Sports complexes</label>
     </div>
     <div class="group">
       <button id="btn-locate">Use my location</button>
@@ -145,6 +209,8 @@
     </div>
   </div>
   <p id="layer-status" class="hint"></p>
+  <p id="zoom-caption" class="hint" style="display:none">Zoomed in: each bubble marks a town. PSI is predicted per NEA region, so towns in the same region share one predicted value. Zoom out to bring the regional bubbles back.</p>
+  <p id="regional-caption" class="hint" style="display:none">Regional haze view: each circle shows the forecast PM2.5 at that place (next 24 hours), converted to a PSI-equivalent. Arrows show where the wind is blowing toward. Dashed lines mark places where the wind points toward Singapore.</p>
 
   <div class="legend">
     <div id="legend-bar" class="legend-bar"></div>
@@ -152,10 +218,27 @@
     <div class="legend-caption">Predicted PSI for tomorrow (blue = clean air, maroon = extreme)</div>
   </div>
 
+  <div class="panel" id="haze-panel">
+    <div class="panel-title">Regional haze outlook for Singapore</div>
+    <div id="haze-body">Loading regional air quality and wind forecasts...</div>
+    <details class="how">
+      <summary>How this outlook works</summary>
+      <div class="how-body">
+        <ol>
+          <li>The page downloads forecast PM2.5 (fine particles) and wind for 11 places in Indonesia and Malaysia, plus the wind over Singapore.</li>
+          <li>PM2.5 is averaged over the next 24 hours and converted to a PSI-equivalent using NEA's 24-hour PM2.5 bands (PSI 100 is about 55 &micro;g/m&sup3;).</li>
+          <li>For each place it checks whether the wind at that place and over Singapore both point from there toward Singapore: within about 45&deg; counts as "toward", within about 70&deg; as "partly toward".</li>
+          <li>The outlook is <b>High</b> if a place at PSI-equivalent 100 or more is strongly upwind and could arrive within 48 hours at current wind speeds. It is <b>Moderate</b> if the wind is only partly favourable, or a place at 75 or more is strongly upwind. Otherwise it is <b>Low</b>.</li>
+        </ol>
+        This is a simple rule-based indicator, not a trained model, and its thresholds have not yet been tested against past haze events. The data are model forecasts on a coarse grid of about 45 km, the places are sample points rather than fire locations, and real haze transport depends on winds at several heights. For official information, check NEA and the ASEAN Specialised Meteorological Centre.
+      </div>
+    </details>
+  </div>
+
   <div class="panel" id="rec-guide">
     <div class="panel-title">How PSI is shown at outdoor recreation areas</div>
     <div id="rec-guide-rows"></div>
-    <div class="guide-note">Each recreation area gets a marker coloured by its region's predicted PSI, with the number inside. Courts and playgrounds from OpenStreetMap use the same colours as small dots. The activity guide is a simplified version of NEA's PSI health advisory bands, so check nea.gov.sg for official advice.</div>
+    <div class="guide-note">Each recreation area gets a marker coloured by its region's predicted PSI, with the number inside. Courts and playgrounds from OpenStreetMap use the same colours as small dots, football fields as squares and sports complexes as diamonds. The activity guide is a simplified version of NEA's PSI health advisory bands, so check nea.gov.sg for official advice.</div>
   </div>
 
   <div id="selected" class="panel">Click anywhere on the map, or tap a recreation area, court or playground, to see the predicted PSI for that spot.</div>
@@ -164,8 +247,9 @@
   <p class="footer">
     Five linear regression models, one per NEA region, trained on Admiralty weather station data and each region's PSI, April 2014 to November 2017 (n = 979 days per region).
     Test MAE versus a naive baseline (tomorrow = today): North 5.71 vs 6.07, South 6.16 vs 6.68, East 5.84 vs 6.33, West 6.12 vs 6.62, Central 6.88 vs 7.44.<br><br>
-    Limitations: PSI is reported per region, not per street, so any spot you pick gets its region's prediction. Region borders are approximated by whichever NEA region centre is nearest. The clean map is a simplified outline, not a survey-grade map. All regions use the same weather inputs. The live version uses the current instant weather reading in place of the daily summaries the models were trained on. The listed recreation areas are examples with approximate positions. Court and playground locations come from OpenStreetMap volunteers and may be incomplete.<br><br>
-    Coastline data: &copy; OpenStreetMap contributors (ODbL), via geo-maps by Simone Primarosa. Street map: &copy; OpenStreetMap contributors &copy; CARTO.
+    Limitations: PSI is reported per region, not per street, so any spot you pick gets its region's prediction. Region borders are approximated by whichever NEA region centre is nearest. The clean map is a simplified outline, not a survey-grade map. All regions use the same weather inputs. The live version uses the current instant weather reading in place of the daily summaries the models were trained on. The listed recreation areas are examples with approximate positions. Court, playground, football field and sports complex locations come from OpenStreetMap volunteers and may be incomplete, and the sports complex layer can include some indoor venues. When you zoom in, the town bubbles show the predicted value of the region each town belongs to, because the models predict one value per region.<br><br>
+    The regional haze outlook is a separate rule-based indicator and does not change the model predictions above, which use local weather only. When the outlook is Moderate or High, those predictions may underestimate tomorrow's PSI.<br><br>
+    Coastline data: &copy; OpenStreetMap contributors (ODbL), via geo-maps by Simone Primarosa. Country outlines: Natural Earth. Street map: &copy; OpenStreetMap contributors &copy; CARTO. Regional air quality and wind forecasts: <a href="https://open-meteo.com/" style="color:#7FB4FF">Open-Meteo.com</a> (CC BY 4.0), air quality containing modified Copernicus Atmosphere Monitoring Service (CAMS) information.
   </p>
 </div>
 
@@ -256,6 +340,17 @@ const PLACE_LABELS = [
   ['Sentosa', 1.2494, 103.8303]
 ];
 
+// Towns shown as small bubbles when you zoom in: [name, lat, lng, (optional) zoom level at which it appears]
+const DISPERSE_ZOOM = 12;
+const TOWNS_EXTRA = [
+  ['Yishun', 1.4304, 103.8354], ['Ang Mo Kio', 1.3691, 103.8454], ['Pasir Ris', 1.3721, 103.9496],
+  ['Tampines', 1.3496, 103.9568], ['Jurong West', 1.3404, 103.7090], ['Jurong East', 1.3329, 103.7436],
+  ['Queenstown', 1.2942, 103.8059], ['Seletar', 1.4040, 103.8690], ['Pulau Ubin', 1.4040, 103.9610],
+  ['Mandai', 1.4030, 103.7870],
+  ['Bishan', 1.3526, 103.8352, 13], ['Orchard', 1.3048, 103.8318, 13], ['Serangoon', 1.3554, 103.8679, 13],
+  ['Kallang', 1.3114, 103.8714, 13], ['Bukit Merah', 1.2819, 103.8239, 13], ['Novena', 1.3204, 103.8438, 13]
+];
+
 // Example outdoor recreation areas (positions approximate): [name, lat, lng]
 const EXAMPLES = [
   ['Woodlands Waterfront Park', 1.4527, 103.7882],
@@ -269,8 +364,31 @@ const EXAMPLES = [
   ['West Coast Park', 1.2917, 103.7640],
   ['Labrador Nature Reserve', 1.2663, 103.8025],
   ['Gardens by the Bay', 1.2816, 103.8636],
-  ['East Coast Park', 1.3008, 103.9122]
+  ['East Coast Park', 1.3008, 103.9122],
+  ['Singapore Sports Hub', 1.3043, 103.8745]
 ];
+const TOWNS = PLACE_LABELS.concat(TOWNS_EXTRA);
+
+// Regional haze: sample points in neighbouring countries [name, country, lat, lng]
+const SG_POINT = [1.3521, 103.8198];
+const HAZE_SOURCES = [
+  ['Dumai',        'Indonesia (Riau)',        1.6670, 101.4500],
+  ['Pekanbaru',    'Indonesia (Riau)',        0.5071, 101.4478],
+  ['Jambi',        'Indonesia (Jambi)',      -1.6101, 103.6131],
+  ['Palembang',    'Indonesia (S. Sumatra)', -2.9761, 104.7754],
+  ['Medan',        'Indonesia (N. Sumatra)',  3.5952,  98.6722],
+  ['Pontianak',    'Indonesia (Kalimantan)', -0.0263, 109.3425],
+  ['Palangkaraya', 'Indonesia (Kalimantan)', -2.2161, 113.9135],
+  ['Melaka',       'Malaysia (Melaka)',       2.1896, 102.2501],
+  ['Kuala Lumpur', 'Malaysia',                3.1390, 101.6869],
+  ['Kuantan',      'Malaysia (Pahang)',       3.8077, 103.3260],
+  ['Kuching',      'Malaysia (Sarawak)',      1.5535, 110.3593]
+];
+const REGIONAL_LAND = {"type":"Feature","properties":{},"geometry":{"type":"MultiPolygon","coordinates":[[[[97.48,1.47],[97.93,0.97],[97.88,0.63],[97.82,0.56],[97.69,0.6],[97.6,0.83],[97.4,0.95],[97.3,1.19],[97.08,1.43],[97.25,1.42],[97.36,1.54],[97.48,1.47]]],[[[99.16,-1.78],[99.07,-1.78],[98.83,-1.61],[98.6,-1.2],[98.68,-0.97],[98.87,-0.92],[98.93,-0.95],[99.13,-1.44],[99.27,-1.63],[99.27,-1.74],[99.16,-1.78]]],[[[106.04,-1.67],[106.16,-1.87],[106.21,-2.19],[106.36,-2.46],[106.82,-2.57],[106.71,-2.66],[106.61,-2.9],[106.67,-3.07],[106,-2.83],[105.91,-2.64],[105.94,-2.49],[105.81,-2.31],[105.79,-2.18],[105.55,-2.08],[105.34,-2.12],[105.13,-2.04],[105.19,-1.92],[105.37,-1.81],[105.37,-1.66],[105.46,-1.57],[105.58,-1.53],[105.7,-1.73],[105.75,-1.66],[105.72,-1.53],[105.91,-1.5],[106.03,-1.59],[106.04,-1.67]]],[[[108.32,3.69],[108.18,3.65],[108.1,3.71],[108.24,3.81],[108.09,3.85],[108,3.98],[108,4.04],[108.25,4.22],[108.39,3.99],[108.4,3.84],[108.32,3.69]]],[[[108.21,-3],[108.17,-3.14],[108.06,-3.23],[107.98,-3.22],[107.94,-3.13],[107.86,-3.09],[107.82,-3.16],[107.61,-3.21],[107.64,-3.12],[107.56,-2.92],[107.67,-2.57],[107.84,-2.53],[108.07,-2.6],[108.22,-2.7],[108.29,-2.83],[108.21,-3]]],[[[96.49,5.23],[96.84,5.27],[97.19,5.21],[97.45,5.24],[97.55,5.21],[97.91,4.88],[98,4.66],[98.25,4.42],[98.24,4.19],[98.31,4.09],[98.66,3.93],[98.78,3.76],[99.15,3.58],[99.73,3.18],[100.53,2.19],[100.89,1.95],[100.82,2.14],[100.83,2.24],[100.94,2.29],[101.05,2.26],[101.3,2.01],[101.4,1.76],[101.48,1.69],[101.79,1.62],[102.1,1.36],[102.24,0.99],[102.39,0.84],[102.57,0.75],[102.85,0.72],[103.03,0.58],[103.07,0.49],[103.01,0.42],[102.55,0.22],[102.89,0.28],[103.34,0.51],[103.48,0.48],[103.67,0.29],[103.79,0.05],[103.43,-0.19],[103.41,-0.36],[103.51,-0.47],[103.44,-0.58],[103.53,-0.75],[103.72,-0.89],[104.06,-1.02],[104.36,-1.04],[104.38,-1.07],[104.51,-1.82],[104.57,-1.92],[104.85,-2.09],[104.83,-2.23],[104.65,-2.43],[104.65,-2.59],[104.97,-2.37],[105.4,-2.38],[105.58,-2.49],[106.04,-3.11],[106.06,-3.22],[105.9,-3.41],[105.84,-3.61],[105.85,-3.73],[105.93,-3.83],[105.83,-4.16],[105.89,-5.01],[105.82,-5.68],[105.75,-5.82],[105.62,-5.8],[105.35,-5.55],[105.08,-5.75],[104.64,-5.52],[104.62,-5.64],[104.68,-5.89],[104.6,-5.91],[104.07,-5.39],[103.83,-5.08],[102.92,-4.47],[102.54,-4.15],[102.13,-3.6],[101.58,-3.17],[101.31,-2.73],[101.12,-2.59],[100.89,-2.25],[100.86,-1.94],[100.49,-1.3],[100.31,-0.83],[99.86,-0.31],[99.67,0.05],[99.33,0.21],[99.16,0.35],[98.8,1.5],[98.6,1.87],[98.08,2.19],[97.8,2.28],[97.7,2.36],[97.59,2.85],[97.39,2.98],[96.97,3.58],[96.8,3.71],[96.44,3.82],[96.23,4.07],[95.58,4.66],[95.21,5.28],[95.25,5.41],[95.23,5.56],[95.4,5.63],[95.63,5.61],[95.74,5.58],[96.13,5.29],[96.49,5.23]]],[[[107.37,-6.01],[107.47,-6.12],[107.67,-6.22],[108.14,-6.3],[108.29,-6.26],[108.52,-6.47],[108.6,-6.73],[108.78,-6.81],[109.3,-6.87],[109.5,-6.81],[109.82,-6.9],[110.2,-6.89],[110.43,-6.95],[110.58,-6.81],[110.74,-6.47],[110.84,-6.42],[110.97,-6.44],[111.18,-6.69],[111.34,-6.7],[111.54,-6.65],[111.74,-6.77],[111.99,-6.81],[112.09,-6.89],[112.54,-6.93],[112.65,-7.22],[112.79,-7.3],[112.79,-7.55],[113.01,-7.66],[113.5,-7.72],[114.07,-7.63],[114.41,-7.79],[114.44,-8],[110.28,-8],[109.85,-7.83],[109.19,-7.7],[108.74,-7.67],[108.57,-7.71],[108.45,-7.8],[108.22,-7.78],[107.8,-7.69],[107.55,-7.54],[107.29,-7.47],[106.45,-7.37],[106.42,-7.24],[106.52,-7.05],[106.2,-6.93],[105.84,-6.85],[105.26,-6.84],[105.27,-6.73],[105.37,-6.66],[105.39,-6.75],[105.48,-6.78],[105.58,-6.67],[105.66,-6.47],[105.71,-6.5],[105.79,-6.46],[105.87,-6.12],[106.07,-5.91],[106.83,-6.1],[107.01,-6.01],[107.05,-5.9],[107.37,-6.01]]],[[[109.63,2.03],[109.54,1.9],[109.57,1.81],[109.64,1.78],[109.66,1.62],[110.5,0.86],[111.1,1.05],[111.48,1],[111.81,1.01],[111.92,1.11],[112.08,1.14],[112.19,1.44],[112.48,1.56],[112.94,1.57],[112.99,1.55],[113.01,1.43],[113.51,1.31],[113.62,1.24],[113.9,1.43],[114.39,1.5],[114.5,1.46],[114.5,-3.41],[114.45,-3.48],[114.3,-3.41],[114.34,-3.24],[114.23,-3.36],[114.08,-3.28],[113.96,-3.39],[113.71,-3.46],[113.63,-3.42],[113.61,-3.2],[113.34,-3.25],[113.04,-2.93],[112.97,-3.19],[112.76,-3.32],[112.6,-3.4],[112.28,-3.32],[111.86,-3.55],[111.82,-3.53],[111.82,-3.06],[111.7,-2.89],[111.62,-2.97],[111.37,-2.93],[110.93,-3.07],[110.83,-3],[110.9,-2.91],[110.7,-3.02],[110.57,-2.89],[110.26,-2.97],[110.1,-2],[109.96,-1.86],[110.04,-1.53],[109.98,-1.28],[109.79,-1.01],[109.45,-0.87],[109.33,-0.88],[109.26,-0.81],[109.27,-0.73],[109.37,-0.64],[109.16,-0.49],[109.12,-0.39],[109.19,-0.01],[109.26,0.03],[108.95,0.36],[108.92,0.91],[108.96,1.13],[109.13,1.25],[109.01,1.24],[109.08,1.5],[109.27,1.71],[109.38,1.92],[109.63,2.03]]],[[[101.71,2.08],[101.77,1.94],[101.72,1.79],[101.6,1.72],[101.5,1.73],[101.4,1.9],[101.41,2.02],[101.64,2.13],[101.71,2.08]]],[[[102.43,0.99],[102.38,0.96],[102.28,1.08],[102.23,1.35],[102.26,1.4],[102.44,1.23],[102.43,0.99]]],[[[102.49,1.46],[102.5,1.33],[102.28,1.45],[102.08,1.5],[102.02,1.61],[102.47,1.51],[102.49,1.46]]],[[[103.03,0.75],[103.01,0.71],[102.49,0.86],[102.46,0.89],[102.51,1.09],[102.55,1.13],[102.73,0.99],[103,0.86],[103.03,0.75]]],[[[103.17,0.87],[103.09,0.85],[102.89,1],[102.7,1.05],[102.73,1.16],[103,1.07],[103.17,0.87]]],[[[103.28,0.54],[103.14,0.55],[103.19,0.7],[103.24,0.7],[103.29,0.61],[103.28,0.54]]],[[[103.45,0.66],[103.34,0.78],[103.39,0.87],[103.5,0.72],[103.45,0.66]]],[[[104.02,1.18],[104.09,1.14],[104.14,1.17],[104.06,0.99],[103.96,1.01],[103.93,1.07],[104.02,1.18]]],[[[104.59,1.22],[104.66,1.05],[104.58,0.83],[104.5,0.85],[104.43,0.96],[104.46,1],[104.44,1.05],[104.25,1.01],[104.25,1.1],[104.36,1.18],[104.59,1.22]]],[[[104.78,-0.18],[104.84,-0.14],[105,-0.28],[104.91,-0.32],[104.7,-0.21],[104.56,-0.25],[104.45,-0.19],[104.54,0.02],[104.64,-0.02],[104.78,-0.18]]],[[[104.47,-0.33],[104.59,-0.47],[104.51,-0.6],[104.41,-0.58],[104.36,-0.66],[104.26,-0.46],[104.3,-0.39],[104.36,-0.4],[104.47,-0.33]]],[[[103.74,-0.35],[103.61,-0.38],[103.46,-0.36],[103.55,-0.23],[103.72,-0.28],[103.77,-0.32],[103.74,-0.35]]],[[[109.71,-1.18],[109.46,-1.28],[109.43,-1.24],[109.48,-0.99],[109.62,-0.98],[109.74,-1.04],[109.75,-1.15],[109.71,-1.18]]],[[[113.85,-7.1],[113.65,-7.11],[113.47,-7.22],[113.13,-7.22],[112.76,-7.14],[112.73,-7.07],[112.87,-6.9],[113.07,-6.88],[113.98,-6.87],[114.07,-6.96],[113.85,-7.1]]],[[[102.37,-5.48],[102.29,-5.48],[102.11,-5.32],[102.2,-5.29],[102.37,-5.37],[102.4,-5.41],[102.37,-5.48]]],[[[100.42,-3.18],[100.46,-3.33],[100.35,-3.23],[100.33,-3.11],[100.21,-2.99],[100.2,-2.79],[100.24,-2.78],[100.45,-3],[100.42,-3.18]]],[[[100.21,-2.74],[100.13,-2.82],[100.01,-2.82],[99.99,-2.53],[100.2,-2.68],[100.21,-2.74]]],[[[99.84,-2.34],[99.61,-2.26],[99.54,-2.16],[99.57,-2.03],[99.69,-2.06],[99.84,-2.34]]],[[[98.46,-0.53],[98.4,-0.58],[98.31,-0.53],[98.43,-0.23],[98.32,0],[98.42,-0.02],[98.55,-0.26],[98.46,-0.53]]],[[[96.46,2.36],[96.34,2.37],[96.02,2.6],[95.81,2.65],[95.72,2.83],[95.81,2.92],[95.9,2.89],[96.42,2.51],[96.46,2.36]]],[[[105.76,2.86],[105.71,2.89],[105.69,3.06],[105.84,2.98],[105.76,2.86]]],[[[108.95,-1.62],[108.84,-1.66],[108.8,-1.57],[108.96,-1.56],[108.95,-1.62]]],[[[106.89,-3.01],[106.81,-3.01],[106.74,-2.93],[106.8,-2.9],[106.91,-2.93],[106.89,-3.01]]],[[[112.72,-5.81],[112.6,-5.84],[112.59,-5.8],[112.69,-5.73],[112.72,-5.81]]],[[[105.25,-6.64],[105.19,-6.66],[105.12,-6.62],[105.26,-6.52],[105.25,-6.64]]],[[[97.34,2.08],[97.11,2.22],[97.29,2.2],[97.34,2.08]]],[[[100.12,6.44],[100.18,6.67],[100.26,6.68],[100.35,6.55],[100.63,6.45],[100.76,6.46],[100.87,6.25],[101.05,6.24],[101.08,5.96],[100.98,5.77],[101.11,5.64],[101.19,5.67],[101.26,5.79],[101.56,5.91],[101.68,5.78],[101.79,5.78],[101.87,5.82],[102.1,6.24],[102.28,6.2],[102.34,6.17],[102.53,5.86],[103.1,5.41],[103.42,4.85],[103.45,4.67],[103.47,4.39],[103.36,3.77],[103.45,3.52],[103.44,2.93],[103.54,2.77],[103.81,2.58],[104.22,1.72],[104.29,1.48],[104.25,1.39],[104.18,1.37],[104.11,1.41],[103.98,1.62],[103.99,1.46],[103.69,1.45],[103.55,1.33],[103.48,1.33],[103.36,1.55],[102.73,1.86],[102.55,2.04],[102.15,2.25],[101.78,2.57],[101.52,2.68],[101.3,2.89],[101.35,3.01],[101.3,3.25],[100.72,3.97],[100.8,4.02],[100.62,4.37],[100.62,4.65],[100.35,5.59],[100.34,5.98],[100.12,6.44]]],[[[114.5,1.46],[114.39,1.5],[113.9,1.43],[113.62,1.24],[113.51,1.31],[113.01,1.43],[112.99,1.55],[112.94,1.57],[112.48,1.56],[112.19,1.44],[112.08,1.14],[111.92,1.11],[111.81,1.01],[111.48,1],[111.1,1.05],[110.5,0.86],[109.73,1.52],[109.66,1.62],[109.64,1.78],[109.57,1.81],[109.54,1.9],[109.63,2.03],[109.72,1.86],[109.86,1.76],[110.11,1.7],[110.35,1.72],[110.67,1.55],[110.89,1.53],[111.1,1.4],[111.22,1.4],[111.06,1.49],[111.04,1.63],[111.15,1.74],[111.27,2.14],[111.21,2.2],[111.21,2.38],[111.24,2.44],[111.35,2.37],[111.44,2.38],[111.44,2.63],[111.51,2.74],[111.73,2.85],[112.12,2.92],[112.99,3.16],[113.45,3.74],[113.92,4.24],[113.98,4.55],[114.07,4.59],[114.22,4.48],[114.29,4.3],[114.42,4.26],[114.5,4.13],[114.5,1.46]]],[[[100.29,5.3],[100.19,5.28],[100.21,5.45],[100.24,5.47],[100.34,5.41],[100.29,5.3]]],[[[99.85,6.47],[99.92,6.36],[99.74,6.26],[99.65,6.42],[99.75,6.41],[99.85,6.47]]],[[[111.39,2.42],[111.31,2.44],[111.3,2.74],[111.33,2.77],[111.38,2.71],[111.39,2.42]]],[[[114.5,4.13],[114.42,4.26],[114.29,4.3],[114.22,4.48],[114.07,4.59],[114.3,4.61],[114.5,4.7],[114.5,4.13]]],[[[98.41,7.9],[98.4,7.83],[98.3,7.78],[98.26,7.93],[98.32,8.17],[98.43,8.09],[98.41,7.9]]],[[[99.92,9],[99.99,8.59],[100.13,8.43],[100.16,8.51],[100.23,8.43],[100.45,7.44],[100.54,7.23],[100.44,7.28],[100.38,7.54],[100.28,7.55],[100.32,7.72],[100.26,7.77],[100.16,7.73],[100.21,7.5],[100.42,7.19],[100.59,7.18],[101.02,6.86],[101.4,6.9],[101.61,6.75],[101.8,6.47],[102.1,6.24],[101.87,5.82],[101.68,5.78],[101.56,5.91],[101.26,5.79],[101.19,5.67],[101.11,5.64],[100.98,5.77],[101.08,5.96],[101.05,6.24],[100.87,6.25],[100.76,6.46],[100.63,6.45],[100.35,6.55],[100.26,6.68],[100.18,6.67],[100.12,6.44],[99.87,6.75],[99.7,6.88],[99.72,7.11],[99.55,7.22],[99.6,7.36],[99.43,7.34],[99.36,7.37],[99.26,7.62],[99.18,7.72],[99.08,7.72],[99.05,7.89],[98.79,8.06],[98.7,8.26],[98.58,8.34],[98.5,8.32],[98.42,8.18],[98.3,8.23],[98.23,8.54],[98.24,8.77],[98.33,9],[99.92,9]]],[[[103.97,1.33],[103.82,1.27],[103.65,1.33],[103.7,1.42],[103.82,1.45],[103.96,1.39],[104,1.37],[103.97,1.33]]]]}};
+const SG_FIT   = [[1.15, 103.60], [1.49, 104.08]];
+const SG_MAXB  = [[1.0, 103.4], [1.6, 104.3]];
+const REG_FIT  = [[-4.8, 98.0], [5.5, 111.5]];
+const REG_MAXB = [[-10, 93], [11, 116]];
 
 // ---------------------------------------------------------------
 // Colour scale: blue -> green -> yellow -> orange -> red -> purple -> maroon
@@ -389,33 +507,40 @@ async function fetchWeatherAverage(endpoint) {
 // ---------------------------------------------------------------
 // Map
 // ---------------------------------------------------------------
-let map, styleMode = 'clean', tileLayer = null, canvasRenderer, selMarker = null, selPopup = null;
-let baseGroup, regionGroup, labelGroup, badgeGroup, recGroup;
+let map, styleMode = 'clean', viewMode = 'sg', tileLayer = null, canvasRenderer, selMarker = null, selPopup = null;
+let baseGroup, regionGroup, labelGroup, badgeGroup, recGroup, regionalBase, hazeGroup, townGroup;
+let townItems = [];
 const placeLayers = {};
+const hazeState = { loaded: false, error: null, sources: [], sg: null, level: 'low', headline: '' };
 
 function initMap() {
   map = L.map('map', { minZoom: 10, maxZoom: 18, zoomControl: true, zoomSnap: 0.25 });
-  map.fitBounds([[1.15, 103.60], [1.49, 104.08]]);
-  map.setMaxBounds([[1.0, 103.4], [1.6, 104.3]]);
+  map.fitBounds(SG_FIT);
+  map.setMaxBounds(SG_MAXB);
   map.createPane('basePane');   map.getPane('basePane').style.zIndex = 250;
   map.createPane('regionPane'); map.getPane('regionPane').style.zIndex = 300;
+  map.createPane('hazePane');   map.getPane('hazePane').style.zIndex = 450;
   canvasRenderer = L.canvas({ padding: 0.5 });
 
   baseGroup = L.layerGroup();
   regionGroup = L.layerGroup();
   labelGroup = L.layerGroup();
-  badgeGroup = L.layerGroup().addTo(map);
-  recGroup = L.layerGroup().addTo(map);
+  regionalBase = L.layerGroup();
+  hazeGroup = L.layerGroup();
+  badgeGroup = L.layerGroup();
+  townGroup = L.layerGroup();
+  recGroup = L.layerGroup();
   selPopup = L.popup({ offset: [0, -6] });
 
   buildBase();
+  buildRegionalBase();
   L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
   addNorthArrow();
   map.attributionControl.addAttribution('Coastline &copy; OpenStreetMap contributors via geo-maps');
 
-  map.on('click', e => showSelection(e.latlng.lat, e.latlng.lng, 'Selected spot'));
-  map.on('zoomend', updateLabels);
-  setMapStyle('clean');
+  map.on('click', e => { if (viewMode === 'sg') showSelection(e.latlng.lat, e.latlng.lng, 'Selected spot'); });
+  map.on('zoomend', updateDispersal);
+  applyLayers();
 }
 
 function addNorthArrow() {
@@ -452,9 +577,60 @@ function buildBase() {
   });
 }
 
+function setGroup(g, on) {
+  if (on) { if (!map.hasLayer(g)) g.addTo(map); }
+  else if (map.hasLayer(g)) map.removeLayer(g);
+}
+
 function updateLabels() {
-  const show = styleMode === 'clean' && map.getZoom() >= 10.5;
-  if (show) labelGroup.addTo(map); else map.removeLayer(labelGroup);
+  const z = map.getZoom();
+  setGroup(labelGroup, viewMode === 'sg' && styleMode === 'clean' && z >= 10.5 && z < DISPERSE_ZOOM);
+}
+
+// Zooming in: the big regional bubbles fade out and the town bubbles slide out from the big bubble's position.
+// Zooming out reverses it. Offsets are set first so the animation starts from the right place.
+function updateTownOffsets() {
+  if (!map || viewMode !== 'sg') return;
+  townItems.forEach(it => {
+    const el = it.marker.getElement();
+    if (!el || !el.firstChild) return;
+    const own = map.latLngToContainerPoint([it.lat, it.lng]);
+    const ctr = map.latLngToContainerPoint(REGION_CENTRES[it.region]);
+    el.firstChild.style.setProperty('--dx', (ctr.x - own.x) + 'px');
+    el.firstChild.style.setProperty('--dy', (ctr.y - own.y) + 'px');
+  });
+}
+
+function updateDispersal() {
+  if (!map) return;
+  const z = map.getZoom(), sg = viewMode === 'sg';
+  updateTownOffsets();
+  document.getElementById('map').classList.toggle('dispersed', sg && z >= DISPERSE_ZOOM);
+  townItems.forEach(it => {
+    const el = it.marker.getElement();
+    if (!el) return;
+    const on = sg && z >= it.minZ;
+    el.classList.toggle('town-on', on);
+    if (el.firstChild) el.firstChild.classList.toggle('on', on);
+  });
+  document.getElementById('zoom-caption').style.display = (sg && z >= DISPERSE_ZOOM) ? 'block' : 'none';
+  updateLabels();
+}
+
+// One place decides which layers are visible, from the view, map style and ticked boxes
+function applyLayers() {
+  const sg = viewMode === 'sg', clean = styleMode === 'clean';
+  if (!clean) ensureTiles();
+  if (tileLayer) setGroup(tileLayer, !clean);
+  setGroup(baseGroup, sg && clean);
+  setGroup(regionGroup, sg && clean);
+  setGroup(regionalBase, !sg && clean);
+  setGroup(badgeGroup, sg);
+  setGroup(recGroup, sg && document.getElementById('toggle-rec').checked);
+  setGroup(hazeGroup, !sg);
+  setGroup(townGroup, sg);
+  Object.keys(placeLayers).forEach(k => setGroup(placeLayers[k].group, sg && document.getElementById(PLACE_KINDS[k].box).checked));
+  updateDispersal();
 }
 
 function ensureTiles() {
@@ -479,20 +655,48 @@ function ensureTiles() {
 
 function setMapStyle(mode) {
   styleMode = mode;
-  if (mode === 'clean') {
-    if (tileLayer) map.removeLayer(tileLayer);
-    baseGroup.addTo(map);
-    regionGroup.addTo(map);
-    document.getElementById('map-note').textContent = '';
-    drawRegionShapes();
+  document.getElementById('map-note').textContent = '';
+  drawRegionShapes();
+  applyLayers();
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  if (typeof renderHazeChip === 'function') renderHazeChip();
+  map.closePopup();
+  if (selMarker) { map.removeLayer(selMarker); selMarker = null; }
+  // Fit first, then set the limits: raising the minimum zoom starts an animated zoom that would otherwise override the fit
+  map.setMaxBounds(null);
+  if (mode === 'regional') {
+    map.setMinZoom(5);
+    map.fitBounds(REG_FIT, { animate: false });
+    map.setMaxBounds(REG_MAXB);
   } else {
-    map.removeLayer(baseGroup);
-    map.removeLayer(regionGroup);
-    document.getElementById('map-note').textContent = '';
-    ensureTiles();
-    tileLayer.addTo(map);
+    map.fitBounds(SG_FIT, { animate: false });
+    map.setMinZoom(10);
+    map.setMaxBounds(SG_MAXB);
   }
-  updateLabels();
+  document.getElementById('regional-caption').style.display = mode === 'regional' ? 'block' : 'none';
+  applyLayers();
+}
+
+function buildRegionalBase() {
+  const lineOpts = { pane: 'basePane', color: '#FFFFFF', weight: 1, opacity: 0.8, interactive: false };
+  for (let lat = -8; lat <= 8; lat += 2) L.polyline([[lat, 94], [lat, 116]], lineOpts).addTo(regionalBase);
+  for (let lng = 96; lng <= 114; lng += 2) L.polyline([[-10, lng], [11, lng]], lineOpts).addTo(regionalBase);
+  L.geoJSON(REGIONAL_LAND, {
+    pane: 'basePane', interactive: false,
+    style: { fillColor: '#F4F1E8', fillOpacity: 1, color: '#8CA0B0', weight: 1 }
+  }).addTo(regionalBase);
+  [['SUMATRA', -3.4, 101.6, 'land-label'], ['PENINSULAR MALAYSIA', 4.9, 101.7, 'land-label'],
+   ['KALIMANTAN', -1.6, 112.3, 'land-label'], ['SARAWAK', 2.6, 112.4, 'land-label'],
+   ['JAVA', -7.3, 109.2, 'land-label'], ['South China Sea', 4.0, 107.2, 'sea-label'],
+   ['Strait of Malacca', 3.9, 99.6, 'sea-label']].forEach(l => {
+    L.marker([l[1], l[2]], {
+      icon: L.divIcon({ className: l[3], html: l[0], iconSize: [140, 14], iconAnchor: [70, 7] }),
+      interactive: false, keyboard: false
+    }).addTo(regionalBase);
+  });
 }
 
 function drawRegionShapes() {
@@ -514,7 +718,7 @@ function drawRegionBadges() {
   REGION_KEYS.forEach(k => {
     const p = predictFor(k);
     const icon = L.divIcon({
-      className: '',
+      className: 'badge-root',
       html: '<div class="region-badge" style="border-color:' + getGaugeColor(p) + '">' +
             '<span class="num">' + p + '</span><span class="nm">' + REGION_NAMES[k] + '</span></div>',
       iconSize: [58, 58],
@@ -524,6 +728,30 @@ function drawRegionBadges() {
       .on('click', () => showSelection(REGION_CENTRES[k][0], REGION_CENTRES[k][1], REGION_NAMES[k] + ' region', { noPin: true }))
       .addTo(badgeGroup);
   });
+}
+
+function townIcon(name, p) {
+  return L.divIcon({
+    className: 'town-root',
+    html: '<div class="town"><div class="tb" style="border-color:' + getGaugeColor(p) + '">' + p + '</div><div class="tn">' + name + '</div></div>',
+    iconSize: [70, 52], iconAnchor: [35, 17]
+  });
+}
+
+function drawTownBubbles() {
+  townGroup.clearLayers();
+  townItems = [];
+  if (!state.loaded) return;
+  TOWNS.forEach(tw => {
+    const region = nearestRegion(tw[1], tw[2]);
+    const p = predictFor(region);
+    const label = tw[0] + ' (' + REGION_NAMES[region] + ' region)';
+    const m = L.marker([tw[1], tw[2]], { icon: townIcon(tw[0], p), keyboard: false, zIndexOffset: 200 })
+      .on('click', () => showSelection(tw[1], tw[2], label, { noPin: true }))
+      .addTo(townGroup);
+    townItems.push({ marker: m, lat: tw[1], lng: tw[2], region: region, minZ: tw[3] || DISPERSE_ZOOM });
+  });
+  updateDispersal();
 }
 
 function spotIcon(p) {
@@ -601,22 +829,38 @@ function showSelection(lat, lng, label, opts) {
 }
 
 // ---------------------------------------------------------------
-// Basketball courts and playgrounds from OpenStreetMap (Overpass API)
+// Courts, playgrounds, football fields and sports complexes from OpenStreetMap (Overpass API)
 // ---------------------------------------------------------------
 const PLACE_KINDS = {
-  bball: { stroke: '#111111', radius: 7, defaultName: 'Basketball court', plural: 'basketball courts' },
-  play:  { stroke: '#FFFFFF', radius: 6, defaultName: 'Playground', plural: 'playgrounds' }
+  bball: { shape: 'circle',  stroke: '#111111', radius: 7, box: 'toggle-bball', defaultName: 'Basketball court', plural: 'basketball courts' },
+  play:  { shape: 'circle',  stroke: '#FFFFFF', radius: 6, box: 'toggle-play',  defaultName: 'Playground',       plural: 'playgrounds' },
+  foot:  { shape: 'square',  box: 'toggle-foot', defaultName: 'Football field',  plural: 'football fields' },
+  comp:  { shape: 'diamond', box: 'toggle-comp', defaultName: 'Sports complex',  plural: 'sports complexes' }
 };
 
+function overpassQuery(kind) {
+  const b = '(1.15,103.6,1.48,104.1)';
+  const wrap = body => '[out:json][timeout:30];(' + body + ');out center;';
+  if (kind === 'bball') return wrap('node["leisure"="pitch"]["sport"="basketball"]' + b + ';way["leisure"="pitch"]["sport"="basketball"]' + b + ';');
+  if (kind === 'play')  return wrap('node["leisure"="playground"]' + b + ';way["leisure"="playground"]' + b + ';');
+  if (kind === 'foot')  return wrap('node["leisure"="pitch"]["sport"~"soccer|football"]' + b + ';way["leisure"="pitch"]["sport"~"soccer|football"]' + b + ';');
+  const lei = '["leisure"~"^(sports_centre|stadium)$"]["indoor"!="yes"]';
+  return wrap('node' + lei + b + ';way' + lei + b + ';relation' + lei + b + ';');
+}
+
+function shapeIcon(shape, color) {
+  return L.divIcon({
+    className: '',
+    html: '<div class="shape ' + shape + '" style="background:' + color + '"></div>',
+    iconSize: [18, 18], iconAnchor: [9, 9]
+  });
+}
+
 async function loadPlaces(kind) {
-  const bbox = '1.15,103.6,1.48,104.1';
-  const query = kind === 'bball'
-    ? '[out:json][timeout:30];(node["leisure"="pitch"]["sport"="basketball"](' + bbox + ');way["leisure"="pitch"]["sport"="basketball"](' + bbox + '););out center;'
-    : '[out:json][timeout:30];(node["leisure"="playground"](' + bbox + ');way["leisure"="playground"](' + bbox + '););out center;';
   const res = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'data=' + encodeURIComponent(query)
+    body: 'data=' + encodeURIComponent(overpassQuery(kind))
   });
   if (!res.ok) throw new Error('Overpass returned ' + res.status);
   const json = await res.json();
@@ -629,16 +873,14 @@ async function loadPlaces(kind) {
     if (lat === null || lng === null) return;
     const name = (el.tags && el.tags.name) ? el.tags.name : cfg.defaultName;
     const region = nearestRegion(lat, lng);
-    L.circleMarker([lat, lng], {
-      renderer: canvasRenderer,
-      radius: cfg.radius,
-      color: cfg.stroke,
-      weight: 2.5,
-      fillColor: state.loaded ? colourForRegion(region) : '#BDBDBD',
-      fillOpacity: 1,
-      bubblingMouseEvents: false,
-      _region: region
-    }).on('click', () => showSelection(lat, lng, name, { noPin: true })).addTo(group);
+    const fill = state.loaded ? colourForRegion(region) : '#BDBDBD';
+    const marker = cfg.shape === 'circle'
+      ? L.circleMarker([lat, lng], {
+          renderer: canvasRenderer, radius: cfg.radius, color: cfg.stroke, weight: 2.5,
+          fillColor: fill, fillOpacity: 1, bubblingMouseEvents: false, _region: region
+        })
+      : L.marker([lat, lng], { icon: shapeIcon(cfg.shape, fill), keyboard: false, _region: region, _shape: cfg.shape });
+    marker.on('click', () => showSelection(lat, lng, name, { noPin: true })).addTo(group);
     count++;
   });
   placeLayers[kind] = { group: group, count: count };
@@ -646,7 +888,11 @@ async function loadPlaces(kind) {
 
 function restylePlaces() {
   Object.keys(placeLayers).forEach(k => {
-    placeLayers[k].group.eachLayer(m => m.setStyle({ fillColor: colourForRegion(m.options._region) }));
+    placeLayers[k].group.eachLayer(m => {
+      const c = colourForRegion(m.options._region);
+      if (m.setStyle) m.setStyle({ fillColor: c });
+      else m.setIcon(shapeIcon(m.options._shape, c));
+    });
   });
 }
 
@@ -654,7 +900,7 @@ async function togglePlaces(kind, on) {
   const status = document.getElementById('layer-status');
   const cfg = PLACE_KINDS[kind];
   if (!on) {
-    if (placeLayers[kind]) map.removeLayer(placeLayers[kind].group);
+    applyLayers();
     status.textContent = '';
     return;
   }
@@ -663,11 +909,11 @@ async function togglePlaces(kind, on) {
       status.textContent = 'Loading ' + cfg.plural + ' from OpenStreetMap...';
       await loadPlaces(kind);
     }
-    placeLayers[kind].group.addTo(map);
+    applyLayers();
     status.textContent = 'Showing ' + placeLayers[kind].count + ' ' + cfg.plural + ' from OpenStreetMap. Locations are volunteer-mapped and may be incomplete.';
   } catch (err) {
     status.textContent = 'Could not load ' + cfg.plural + ' (' + err.message + '). This data comes from an outside service that may be busy or blocked on this network. Untick and tick the box to try again.';
-    document.getElementById(kind === 'bball' ? 'toggle-bball' : 'toggle-play').checked = false;
+    document.getElementById(cfg.box).checked = false;
   }
 }
 
@@ -705,6 +951,7 @@ async function loadAndPredict() {
 
   drawRegionShapes();
   drawRegionBadges();
+  drawTownBubbles();
   drawRecreation();
   restylePlaces();
 
@@ -723,6 +970,279 @@ async function loadAndPredict() {
     const s = state.lastSelection;
     showSelection(s.lat, s.lng, s.label, s.opts);
   }
+  loadHaze();
+}
+
+// ---------------------------------------------------------------
+// Regional haze outlook (rule-based, uses Open-Meteo forecasts)
+// ---------------------------------------------------------------
+const toRad = d => d * Math.PI / 180;
+const toDeg = r => r * 180 / Math.PI;
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// Compass bearing (degrees clockwise from north) of the direction you travel from point 1 to point 2
+function bearingDeg(lat1, lon1, lat2, lon2) {
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+function compass(deg) {
+  const names = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return names[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
+
+// Current hour in Singapore, in the same format as the API's time strings
+function sgNowKey() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false
+  }).formatToParts(new Date());
+  const get = t => parts.find(p => p.type === t).value;
+  const h = get('hour') === '24' ? '00' : get('hour');
+  return get('year') + '-' + get('month') + '-' + get('day') + 'T' + h + ':00';
+}
+
+// Average wind over a window as a vector. Open-Meteo gives the direction the wind blows FROM,
+// so the direction it blows TOWARD is 180 degrees opposite.
+function meanWind(speeds, dirsFrom) {
+  let u = 0, w = 0, n = 0;
+  for (let i = 0; i < speeds.length; i++) {
+    if (typeof speeds[i] !== 'number' || typeof dirsFrom[i] !== 'number') continue;
+    const t = toRad(dirsFrom[i]);
+    u += -speeds[i] * Math.sin(t);
+    w += -speeds[i] * Math.cos(t);
+    n++;
+  }
+  if (!n) return null;
+  u /= n; w /= n;
+  const toDir = (toDeg(Math.atan2(u, w)) + 360) % 360;
+  return { speed: Math.hypot(u, w), toDir: toDir, fromDir: (toDir + 180) % 360 };
+}
+
+// Approximate PSI-equivalent of a PM2.5 concentration (ug/m3), from NEA's 24-hour PM2.5 bands
+const PM25_BREAKS = [[0, 0], [12, 50], [55, 100], [150, 200], [250, 300], [350, 400], [500, 500]];
+function pm25ToPsi(pm) {
+  if (pm <= 0) return 0;
+  for (let i = 1; i < PM25_BREAKS.length; i++) {
+    const a = PM25_BREAKS[i - 1], b = PM25_BREAKS[i];
+    if (pm <= b[0]) return a[1] + (pm - a[0]) * (b[1] - a[1]) / (b[0] - a[0]);
+  }
+  return 500;
+}
+
+function alignText(a) {
+  if (a >= 0.7) return { key: 'toward', label: 'Toward Singapore' };
+  if (a >= 0.3) return { key: 'partly', label: 'Partly toward' };
+  return { key: 'away', label: 'Not toward' };
+}
+
+function analyseHaze(aq, wx) {
+  const n = HAZE_SOURCES.length;
+  if (!Array.isArray(aq) || !Array.isArray(wx) || aq.length < n + 1 || wx.length < n + 1) {
+    throw new Error('unexpected response from the data service');
+  }
+  const times = wx[0].hourly.time;
+  let start = times.indexOf(sgNowKey());
+  if (start < 0) start = 0;
+  const end = start + 24;
+
+  const sgWind = meanWind(wx[n].hourly.wind_speed_10m.slice(start, end), wx[n].hourly.wind_direction_10m.slice(start, end));
+  if (!sgWind) throw new Error('no wind forecast for Singapore');
+
+  const sources = [];
+  HAZE_SOURCES.forEach((s, i) => {
+    const pmVals = (aq[i].hourly.pm2_5 || []).slice(start, end).filter(v => typeof v === 'number');
+    const w = meanWind(wx[i].hourly.wind_speed_10m.slice(start, end), wx[i].hourly.wind_direction_10m.slice(start, end));
+    if (!pmVals.length || !w) return;
+    const pm = pmVals.reduce((a, b) => a + b, 0) / pmVals.length;
+    const dist = haversineKm(s[2], s[3], SG_POINT[0], SG_POINT[1]);
+    const bearing = bearingDeg(s[2], s[3], SG_POINT[0], SG_POINT[1]);
+    // Wind must point from the source toward Singapore, both at the source and over Singapore
+    const aSrc = w.speed >= 1 ? Math.max(0, Math.cos(toRad(w.toDir - bearing))) : 0;
+    const aSg = sgWind.speed >= 1 ? Math.max(0, Math.cos(toRad(sgWind.toDir - bearing))) : 0;
+    const align = Math.min(aSrc, aSg);
+    const speed = (w.speed + sgWind.speed) / 2;
+    const hours = dist / Math.max(speed, 3);
+    sources.push({ name: s[0], country: s[1], lat: s[2], lon: s[3], pm: pm, psiEq: pm25ToPsi(pm),
+                   wind: w, dist: dist, bearing: bearing, align: align, hours: hours });
+  });
+  if (!sources.length) throw new Error('no usable forecast data');
+
+  // Outlook rules
+  const risk = s => s.psiEq * s.align;
+  const high = sources.filter(s => s.psiEq >= 100 && s.align >= 0.7 && s.hours <= 48);
+  const modA = sources.filter(s => s.psiEq >= 100 && s.align >= 0.3 && s.hours <= 72);
+  const modB = sources.filter(s => s.psiEq >= 75 && s.align >= 0.7 && s.hours <= 48);
+  const best = list => list.slice().sort((a, b) => risk(b) - risk(a))[0];
+
+  let level = 'low', headline;
+  if (high.length) {
+    level = 'high';
+    const t = best(high);
+    headline = 'Poor air near ' + t.name + ' (' + t.country + ') is likely to be carried toward Singapore, roughly ' +
+               Math.round(t.hours) + ' hours away at current wind speeds.';
+  } else if (modA.length) {
+    level = 'moderate';
+    const t = best(modA);
+    headline = 'Poor air is forecast near ' + t.name + ' (' + t.country + ') and the wind is partly favourable for it to reach Singapore.';
+  } else if (modB.length) {
+    level = 'moderate';
+    const t = best(modB);
+    headline = 'Elevated particle levels near ' + t.name + ' (' + t.country + ') are upwind of Singapore.';
+  } else {
+    const poor = sources.filter(s => s.psiEq >= 100).sort((a, b) => b.psiEq - a.psiEq);
+    if (poor.length) {
+      const far = poor.filter(s => s.align >= 0.3).sort((a, b) => risk(b) - risk(a))[0];
+      headline = far
+        ? 'Poor air is forecast near ' + far.name + ' and the wind points toward Singapore, but it is about ' + Math.round(far.hours) +
+          ' hours away at current wind speeds, so it is unlikely to arrive soon.'
+        : 'Poor air is forecast near ' + poor[0].name + ', but the wind is not blowing toward Singapore.';
+    } else {
+      headline = 'No poor air quality is forecast at the places checked upwind of Singapore.';
+    }
+  }
+
+  hazeState.sources = sources;
+  hazeState.sg = sgWind;
+  hazeState.level = level;
+  hazeState.headline = headline;
+}
+
+async function loadHaze() {
+  hazeState.loaded = false;
+  hazeState.error = null;
+  renderHazePanel();
+  try {
+    const lats = HAZE_SOURCES.map(s => s[2]).concat([SG_POINT[0]]).join(',');
+    const lons = HAZE_SOURCES.map(s => s[3]).concat([SG_POINT[1]]).join(',');
+    const tz = 'Asia%2FSingapore';
+    const [aqRes, wxRes] = await Promise.all([
+      fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + lats + '&longitude=' + lons + '&hourly=pm2_5&forecast_days=3&timezone=' + tz),
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lons + '&hourly=wind_speed_10m,wind_direction_10m&forecast_days=3&timezone=' + tz)
+    ]);
+    if (!aqRes.ok || !wxRes.ok) throw new Error('the data service returned an error (' + (!aqRes.ok ? aqRes.status : wxRes.status) + ')');
+    analyseHaze(await aqRes.json(), await wxRes.json());
+    hazeState.loaded = true;
+  } catch (err) {
+    hazeState.error = err.message;
+    hazeState.loaded = false;
+  }
+  renderHazePanel();
+  drawHazeLayer();
+}
+
+const HAZE_LEVELS = {
+  low:      { label: 'LOW',      color: '#2563EB' },
+  moderate: { label: 'MODERATE', color: '#F97316' },
+  high:     { label: 'HIGH',     color: '#DC2626' }
+};
+
+function renderHazeChip() {
+  const chip = document.getElementById('haze-chip');
+  if (hazeState.error) {
+    chip.style.display = 'flex';
+    chip.innerHTML = '<span class="haze-badge" style="background:#444">UNAVAILABLE</span><span>Regional haze outlook could not be loaded.</span>';
+    return;
+  }
+  if (!hazeState.loaded) { chip.style.display = 'none'; return; }
+  const lv = HAZE_LEVELS[hazeState.level];
+  chip.style.display = 'flex';
+  chip.innerHTML = '<span style="color:#9A9A9A">Regional haze outlook</span><span class="haze-badge" style="background:' + lv.color + '">' + lv.label + '</span>' +
+                   '<span class="more">' + (viewMode === 'regional' ? 'details below' : 'view regional map &rsaquo;') + '</span>';
+}
+
+function renderHazePanel() {
+  renderHazeChip();
+  const body = document.getElementById('haze-body');
+  if (hazeState.error) {
+    body.innerHTML = 'Regional haze data could not be loaded just now (' + hazeState.error + '). It comes from an outside service (Open-Meteo) that may be busy or blocked on this network. Press Refresh to try again.';
+    return;
+  }
+  if (!hazeState.loaded) { body.textContent = 'Loading regional air quality and wind forecasts...'; return; }
+  const H = hazeState, lv = HAZE_LEVELS[H.level];
+  let html = '<div><span class="haze-badge" style="background:' + lv.color + '">' + lv.label + '</span> ' +
+             '<span class="haze-headline">' + H.headline + '</span></div>' +
+             '<div style="margin-top:6px">Wind over Singapore (next 24 hours, average): from <b>' + compass(H.sg.fromDir) +
+             '</b> at <b>' + Math.round(H.sg.speed) + ' km/h</b>.</div>';
+
+  const rows = H.sources.slice().sort((a, b) => (b.psiEq * b.align) - (a.psiEq * a.align) || b.psiEq - a.psiEq).slice(0, 5);
+  html += '<table class="haze-table"><tr><th>Place</th><th>PM2.5</th><th>PSI-equiv.</th><th>Wind</th><th>Distance</th><th>Travel time*</th></tr>' +
+    rows.map(s => {
+      const a = alignText(s.align);
+      return '<tr><td>' + s.name + '</td><td>' + Math.round(s.pm) + ' &micro;g/m&sup3;</td><td><b style="color:#FFFFFF">' + Math.round(s.psiEq) +
+             '</b></td><td><span class="tag ' + a.key + '">' + a.label + '</span></td><td>' + Math.round(s.dist) + ' km</td><td>' +
+             (s.align >= 0.3 ? 'about ' + Math.round(s.hours) + ' h' : '-') + '</td></tr>';
+    }).join('') + '</table>' +
+    '<div class="guide-note">*Rough estimate at current 10 m wind speeds, shown only where the wind is at least partly toward Singapore. Showing the five places of most concern out of ' + H.sources.length + ' checked.</div>';
+  if (H.level !== 'low') {
+    html += '<div class="guide-note" style="color:#FDBA74">The PSI predictions on this page use local weather only, so they may underestimate tomorrow\'s PSI while this outlook is above Low.</div>';
+  }
+  body.innerHTML = html;
+}
+
+// A line with an arrow head, drawn from a point in the direction the wind blows toward
+function arrowLayers(lat, lon, toDir, speed, color, weight) {
+  const rad = toRad(toDir);
+  const off = 0.3, len = Math.min(1.8, 0.35 + speed * 0.045);
+  const sLat = lat + off * Math.cos(rad), sLon = lon + off * Math.sin(rad);
+  const eLat = sLat + len * Math.cos(rad), eLon = sLon + len * Math.sin(rad);
+  const head = 0.3, a1 = rad + Math.PI - 0.5, a2 = rad + Math.PI + 0.5;
+  return [
+    L.polyline([[sLat, sLon], [eLat, eLon]], { pane: 'hazePane', color: color, weight: weight, interactive: false }),
+    L.polygon([[eLat, eLon], [eLat + head * Math.cos(a1), eLon + head * Math.sin(a1)], [eLat + head * Math.cos(a2), eLon + head * Math.sin(a2)]],
+              { pane: 'hazePane', color: color, weight: 1, fillColor: color, fillOpacity: 1, interactive: false })
+  ];
+}
+
+function hazePopup(s) {
+  const a = alignText(s.align), band = getBand(s.psiEq);
+  return '<b>' + s.name + '</b><br>' + s.country + '<br>' +
+    'Forecast PM2.5 (next 24 h): <b>' + Math.round(s.pm) + ' &micro;g/m&sup3;</b><br>' +
+    'PSI-equivalent: <b>' + Math.round(s.psiEq) + '</b> (' + band + ')<br>' +
+    'Wind here: from ' + compass(s.wind.fromDir) + ' at ' + Math.round(s.wind.speed) + ' km/h<br>' +
+    'Distance to Singapore: ' + Math.round(s.dist) + ' km<br>' +
+    'Wind direction: <b>' + a.label + '</b>' + (s.align >= 0.3 ? ' (about ' + Math.round(s.hours) + ' h)' : '');
+}
+
+function hzIcon(label, num, color, cls) {
+  return L.divIcon({
+    className: '',
+    html: '<div class="hz-wrap"><div class="hz ' + (cls || '') + '" style="border-color:' + color + '">' + num + '</div><div class="hz-name">' + label + '</div></div>',
+    iconSize: [70, 54], iconAnchor: [35, 17]
+  });
+}
+
+function drawHazeLayer() {
+  hazeGroup.clearLayers();
+  if (!hazeState.loaded) return;
+  const H = hazeState;
+  // dashed lines from places where the wind points toward Singapore and the air is not clean
+  H.sources.forEach(s => {
+    if (s.align >= 0.3 && s.psiEq >= 75) {
+      const strong = s.align >= 0.7 && s.psiEq >= 100;
+      L.polyline([[s.lat, s.lon], SG_POINT], {
+        pane: 'hazePane', color: strong ? '#DC2626' : '#F97316', weight: strong ? 4 : 3, dashArray: '8 6', opacity: 0.9, interactive: false
+      }).addTo(hazeGroup);
+    }
+  });
+  // wind arrows
+  H.sources.forEach(s => arrowLayers(s.lat, s.lon, s.wind.toDir, s.wind.speed, '#33414D', 2).forEach(l => l.addTo(hazeGroup)));
+  arrowLayers(SG_POINT[0], SG_POINT[1], H.sg.toDir, H.sg.speed, '#111111', 3).forEach(l => l.addTo(hazeGroup));
+  // place markers
+  H.sources.forEach(s => {
+    L.marker([s.lat, s.lon], { icon: hzIcon(s.name, Math.round(s.psiEq), getGaugeColor(s.psiEq)), keyboard: false })
+      .bindPopup(hazePopup(s)).addTo(hazeGroup);
+  });
+  L.marker(SG_POINT, { icon: hzIcon('Singapore', 'SG', '#FFFFFF', 'sg'), keyboard: false })
+    .bindPopup('<b>Singapore</b><br>Wind over Singapore (next 24 h average): from ' + compass(H.sg.fromDir) + ' at ' + Math.round(H.sg.speed) + ' km/h<br>Regional haze outlook: <b>' + HAZE_LEVELS[H.level].label + '</b>')
+    .addTo(hazeGroup);
 }
 
 // ---------------------------------------------------------------
@@ -774,11 +1294,15 @@ if (typeof L === 'undefined') {
   initMap();
   document.querySelectorAll('input[name="mapstyle"]').forEach(r =>
     r.addEventListener('change', e => { if (e.target.checked) setMapStyle(e.target.value); }));
-  document.getElementById('toggle-rec').addEventListener('change', e => {
-    if (e.target.checked) recGroup.addTo(map); else map.removeLayer(recGroup);
+  document.getElementById('toggle-rec').addEventListener('change', applyLayers);
+  document.getElementById('haze-chip').addEventListener('click', () => {
+    document.querySelector('input[name="viewmode"][value="regional"]').checked = true;
+    setViewMode('regional');
   });
-  document.getElementById('toggle-bball').addEventListener('change', e => togglePlaces('bball', e.target.checked));
-  document.getElementById('toggle-play').addEventListener('change', e => togglePlaces('play', e.target.checked));
+  document.querySelectorAll('input[name="viewmode"]').forEach(r =>
+    r.addEventListener('change', e => { if (e.target.checked) setViewMode(e.target.value); }));
+  Object.keys(PLACE_KINDS).forEach(k =>
+    document.getElementById(PLACE_KINDS[k].box).addEventListener('change', e => togglePlaces(k, e.target.checked)));
   document.getElementById('btn-refresh').addEventListener('click', loadAndPredict);
   document.getElementById('btn-locate').addEventListener('click', locateUser);
   loadAndPredict();
