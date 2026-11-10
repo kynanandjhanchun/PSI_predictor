@@ -204,6 +204,10 @@
       <label><input type="checkbox" id="toggle-comp"><span class="dot comp"></span>Sports complexes</label>
     </div>
     <div class="group">
+      <span class="group-title">Experimental</span>
+      <label><input type="checkbox" id="toggle-exp">Use nearest weather station</label>
+    </div>
+    <div class="group">
       <button id="btn-locate">Use my location</button>
       <button id="btn-refresh">Refresh</button>
     </div>
@@ -242,12 +246,14 @@
   </div>
 
   <div id="selected" class="panel">Click anywhere on the map, or tap a recreation area, court or playground, to see the predicted PSI for that spot.</div>
+  <div id="exp-panel" class="panel" style="display:none"></div>
   <div id="inputs" class="panel" style="display:none"></div>
 
   <p class="footer">
     Five linear regression models, one per NEA region, trained on Admiralty weather station data and each region's PSI, April 2014 to November 2017 (n = 979 days per region).
     Test MAE versus a naive baseline (tomorrow = today): North 5.71 vs 6.07, South 6.16 vs 6.68, East 5.84 vs 6.33, West 6.12 vs 6.62, Central 6.88 vs 7.44.<br><br>
     Limitations: PSI is reported per region, not per street, so any spot you pick gets its region's prediction. Region borders are approximated by whichever NEA region centre is nearest. The clean map is a simplified outline, not a survey-grade map. All regions use the same weather inputs. The live version uses the current instant weather reading in place of the daily summaries the models were trained on. The listed recreation areas are examples with approximate positions. Court, playground, football field and sports complex locations come from OpenStreetMap volunteers and may be incomplete, and the sports complex layer can include some indoor venues. When you zoom in, the town bubbles show the predicted value of the region each town belongs to, because the models predict one value per region.<br><br>
+    Wind speeds from NEA's live feed are reported in knots and are converted to km/h to match the units the models were trained on. The experimental "nearest weather station" option gives each location the readings from its nearest NEA station instead of the island-wide average; it has not been validated.<br><br>
     The regional haze outlook is a separate rule-based indicator and does not change the model predictions above, which use local weather only. When the outlook is Moderate or High, those predictions may underestimate tomorrow's PSI.<br><br>
     Coastline data: &copy; OpenStreetMap contributors (ODbL), via geo-maps by Simone Primarosa. Country outlines: Natural Earth. Street map: &copy; OpenStreetMap contributors &copy; CARTO. Regional air quality and wind forecasts: <a href="https://open-meteo.com/" style="color:#7FB4FF">Open-Meteo.com</a> (CC BY 4.0), air quality containing modified Copernicus Atmosphere Monitoring Service (CAMS) information.
   </p>
@@ -438,23 +444,62 @@ const state = {
   loaded: false,
   current: {},
   weather: { temp: FALLBACKS.temp, rain: FALLBACKS.rain, wind: FALLBACKS.wind },
+  stations: null,          // per-station readings: { temp: [...], rain: [...], wind: [...] }
+  experimental: false,     // use the nearest weather station instead of the island-wide average
   lastSelection: null
 };
 
-function predictFor(region) {
+function predictWith(region, w) {
   const m = MODELS[region];
   const f = {
-    daily_rainfall_total: state.weather.rain,
-    mean_temperature: state.weather.temp,
-    maximum_temperature: state.weather.temp,
-    minimum_temperature: state.weather.temp,
-    mean_wind_speed: state.weather.wind,
-    max_wind_speed: state.weather.wind,
+    daily_rainfall_total: w.rain,
+    mean_temperature: w.temp,
+    maximum_temperature: w.temp,
+    minimum_temperature: w.temp,
+    mean_wind_speed: w.wind,
+    max_wind_speed: w.wind,
     psi_today: state.current[region]
   };
   let p = m.intercept;
   for (const k in f) p += m[k] * f[k];
   return Math.max(0, Math.round(p));
+}
+
+// Prediction using the island-wide average weather (the validated default)
+function predictFor(region) {
+  return predictWith(region, state.weather);
+}
+
+// Nearest reading from a list of stations
+function nearestStation(list, lat, lng) {
+  let best = null, bestD = Infinity;
+  list.forEach(s => {
+    const d = haversineKm(lat, lng, s.lat, s.lng);
+    if (d < bestD) { bestD = d; best = s; }
+  });
+  return best ? { s: best, km: bestD } : null;
+}
+
+// Experimental: weather from the station nearest to a location (null when switched off or unavailable)
+function localWeather(lat, lng) {
+  if (!state.experimental || !state.stations) return null;
+  const t = nearestStation(state.stations.temp, lat, lng);
+  const r = nearestStation(state.stations.rain, lat, lng);
+  const w = nearestStation(state.stations.wind, lat, lng);
+  if (!t || !r || !w) return null;
+  return { temp: t.s.value, rain: r.s.value, wind: w.s.value, src: { temp: t, rain: r, wind: w } };
+}
+
+// Prediction for a location: its region's model, with local weather when the experimental option is on
+function predictAt(lat, lng, region) {
+  region = region || nearestRegion(lat, lng);
+  const lw = localWeather(lat, lng);
+  return predictWith(region, lw || state.weather);
+}
+
+// Value shown on a region's big bubble and shading
+function regionValue(k) {
+  return predictAt(REGION_CENTRES[k][0], REGION_CENTRES[k][1], k);
 }
 
 function nearestRegion(lat, lng) {
@@ -473,7 +518,7 @@ function insideSingapore(lat, lng) {
 }
 
 function colourForRegion(region) {
-  return getGaugeColor(predictFor(region));
+  return getGaugeColor(regionValue(region));
 }
 
 // ---------------------------------------------------------------
@@ -498,10 +543,24 @@ async function fetchRegionalPsi() {
   return out;
 }
 
-async function fetchWeatherAverage(endpoint) {
+// Per-station readings, joined with station locations. NEA reports wind in knots, but the models were
+// trained on km/h, so values are converted using the unit the service reports.
+async function fetchStationReadings(endpoint) {
   const data = await fetchJson(endpoint);
-  const values = data.readings[0].data.map(r => r.value);
-  return values.reduce((a, b) => a + b, 0) / values.length;
+  const unit = String(data.readingUnit || '').toLowerCase();
+  const factor = unit.indexOf('knot') >= 0 ? 1.852 : (unit.indexOf('m/s') >= 0 ? 3.6 : 1);
+  const byId = {};
+  (data.stations || []).forEach(s => {
+    const loc = s.location || s;
+    if (typeof loc.latitude === 'number' && typeof loc.longitude === 'number') byId[s.id] = { name: s.name, lat: loc.latitude, lng: loc.longitude };
+  });
+  const list = [];
+  (data.readings[0].data || []).forEach(r => {
+    const st = byId[r.stationId];
+    if (st && typeof r.value === 'number') list.push({ name: st.name, lat: st.lat, lng: st.lng, value: r.value * factor });
+  });
+  if (!list.length) throw new Error(endpoint + ' had no usable station readings');
+  return list;
 }
 
 // ---------------------------------------------------------------
@@ -716,7 +775,7 @@ function drawRegionShapes() {
 function drawRegionBadges() {
   badgeGroup.clearLayers();
   REGION_KEYS.forEach(k => {
-    const p = predictFor(k);
+    const p = regionValue(k);
     const icon = L.divIcon({
       className: 'badge-root',
       html: '<div class="region-badge" style="border-color:' + getGaugeColor(p) + '">' +
@@ -744,7 +803,7 @@ function drawTownBubbles() {
   if (!state.loaded) return;
   TOWNS.forEach(tw => {
     const region = nearestRegion(tw[1], tw[2]);
-    const p = predictFor(region);
+    const p = predictAt(tw[1], tw[2], region);
     const label = tw[0] + ' (' + REGION_NAMES[region] + ' region)';
     const m = L.marker([tw[1], tw[2]], { icon: townIcon(tw[0], p), keyboard: false, zIndexOffset: 200 })
       .on('click', () => showSelection(tw[1], tw[2], label, { noPin: true }))
@@ -768,7 +827,7 @@ function drawRecreation() {
   if (!state.loaded) return;
   EXAMPLES.forEach(e => {
     const region = nearestRegion(e[1], e[2]);
-    const p = predictFor(region);
+    const p = predictAt(e[1], e[2], region);
     L.marker([e[1], e[2]], { icon: spotIcon(p), keyboard: false })
       .bindTooltip(e[0], { direction: 'top', offset: [0, -14] })
       .on('click', () => showSelection(e[1], e[2], e[0], { noPin: true }))
@@ -798,15 +857,24 @@ function showSelection(lat, lng, label, opts) {
   }
   state.lastSelection = { lat: lat, lng: lng, label: label, opts: opts };
   const region = nearestRegion(lat, lng);
-  const p = predictFor(region);
+  const p = predictAt(lat, lng, region);
   const cur = Math.round(state.current[region]);
   const color = getGaugeColor(p);
-  const html =
+  let html =
     '<b>' + label + '</b><br>' +
     REGION_NAMES[region] + ' region<br>' +
     'Predicted PSI tomorrow: <b>' + p + '</b> (' + getBand(p) + ')<br>' +
     'Current reading: ' + cur + '<br>' +
     'Outdoor activity: ' + getAdvice(p);
+  const lw = localWeather(lat, lng);
+  if (lw) {
+    const base = predictFor(region), diff = p - base;
+    html += '<br><span style="color:#9A9A9A">Experimental local weather: ' +
+      lw.temp.toFixed(1) + ' &deg;C (' + lw.src.temp.s.name + ', ' + lw.src.temp.km.toFixed(1) + ' km), wind ' +
+      lw.wind.toFixed(1) + ' km/h (' + lw.src.wind.s.name + ', ' + lw.src.wind.km.toFixed(1) + ' km), rain ' +
+      lw.rain.toFixed(1) + ' mm (' + lw.src.rain.s.name + ', ' + lw.src.rain.km.toFixed(1) + ' km).<br>' +
+      'Region-wide prediction would be ' + base + ' (' + (diff > 0 ? '+' : '') + diff + ' here).</span>';
+  }
 
   panel.innerHTML = html;
   panel.style.borderLeft = '4px solid ' + color;
@@ -873,13 +941,13 @@ async function loadPlaces(kind) {
     if (lat === null || lng === null) return;
     const name = (el.tags && el.tags.name) ? el.tags.name : cfg.defaultName;
     const region = nearestRegion(lat, lng);
-    const fill = state.loaded ? colourForRegion(region) : '#BDBDBD';
+    const fill = state.loaded ? getGaugeColor(predictAt(lat, lng, region)) : '#BDBDBD';
     const marker = cfg.shape === 'circle'
       ? L.circleMarker([lat, lng], {
           renderer: canvasRenderer, radius: cfg.radius, color: cfg.stroke, weight: 2.5,
-          fillColor: fill, fillOpacity: 1, bubblingMouseEvents: false, _region: region
+          fillColor: fill, fillOpacity: 1, bubblingMouseEvents: false, _region: region, _lat: lat, _lng: lng
         })
-      : L.marker([lat, lng], { icon: shapeIcon(cfg.shape, fill), keyboard: false, _region: region, _shape: cfg.shape });
+      : L.marker([lat, lng], { icon: shapeIcon(cfg.shape, fill), keyboard: false, _region: region, _lat: lat, _lng: lng, _shape: cfg.shape });
     marker.on('click', () => showSelection(lat, lng, name, { noPin: true })).addTo(group);
     count++;
   });
@@ -889,7 +957,7 @@ async function loadPlaces(kind) {
 function restylePlaces() {
   Object.keys(placeLayers).forEach(k => {
     placeLayers[k].group.eachLayer(m => {
-      const c = colourForRegion(m.options._region);
+      const c = getGaugeColor(predictAt(m.options._lat, m.options._lng, m.options._region));
       if (m.setStyle) m.setStyle({ fillColor: c });
       else m.setIcon(shapeIcon(m.options._shape, c));
     });
@@ -926,12 +994,13 @@ async function loadAndPredict() {
 
   const results = await Promise.allSettled([
     fetchRegionalPsi(),
-    fetchWeatherAverage('air-temperature'),
-    fetchWeatherAverage('rainfall'),
-    fetchWeatherAverage('wind-speed')
+    fetchStationReadings('air-temperature'),
+    fetchStationReadings('rainfall'),
+    fetchStationReadings('wind-speed')
   ]);
 
   const fallbackUsed = [];
+  const lists = {};
   if (results[0].status === 'fulfilled') {
     state.current = results[0].value;
   } else {
@@ -940,20 +1009,20 @@ async function loadAndPredict() {
   }
   function pick(i, key, label) {
     const r = results[i];
-    if (r.status === 'fulfilled' && typeof r.value === 'number' && !isNaN(r.value)) return r.value;
+    if (r.status === 'fulfilled' && r.value.length) {
+      lists[key] = r.value;
+      return r.value.reduce((a, s) => a + s.value, 0) / r.value.length;   // island-wide average
+    }
     fallbackUsed.push(label);
     return FALLBACKS[key];
   }
   state.weather.temp = pick(1, 'temp', 'temperature');
   state.weather.rain = pick(2, 'rain', 'rainfall');
   state.weather.wind = pick(3, 'wind', 'wind speed');
+  state.stations = (lists.temp && lists.rain && lists.wind) ? lists : null;
   state.loaded = true;
 
-  drawRegionShapes();
-  drawRegionBadges();
-  drawTownBubbles();
-  drawRecreation();
-  restylePlaces();
+  redrawAll();
 
   const inputs = document.getElementById('inputs');
   inputs.style.display = 'block';
@@ -966,11 +1035,52 @@ async function loadAndPredict() {
     ? 'Note: ' + fallbackUsed.join(', ') + ' could not be reached just now, using a typical estimate instead.'
     : '';
 
+  loadHaze();
+}
+
+// Redraw everything that depends on the predictions
+function redrawAll() {
+  drawRegionShapes();
+  drawRegionBadges();
+  drawTownBubbles();
+  drawRecreation();
+  restylePlaces();
+  renderExpSummary();
   if (state.lastSelection) {
     const s = state.lastSelection;
     showSelection(s.lat, s.lng, s.label, s.opts);
   }
-  loadHaze();
+}
+
+// Shows how much the experimental option moves the predictions, region by region
+function renderExpSummary() {
+  const panel = document.getElementById('exp-panel');
+  if (!state.experimental) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (!state.stations) {
+    panel.innerHTML = '<div class="panel-title">Experimental: nearest weather station</div>Station readings were not available, so the island-wide average is being used.';
+    return;
+  }
+  const ranges = {};
+  REGION_KEYS.forEach(k => { ranges[k] = []; });
+  let maxDiff = 0;
+  TOWNS.forEach(tw => {
+    const r = nearestRegion(tw[1], tw[2]);
+    const local = predictAt(tw[1], tw[2], r);
+    ranges[r].push(local);
+    maxDiff = Math.max(maxDiff, Math.abs(local - predictFor(r)));
+  });
+  const rows = REGION_KEYS.map(k => {
+    const lo = Math.min.apply(null, ranges[k]), hi = Math.max.apply(null, ranges[k]);
+    return '<tr><td>' + REGION_NAMES[k] + '</td><td>' + predictFor(k) + '</td><td>' + (lo === hi ? lo : lo + ' to ' + hi) + '</td></tr>';
+  }).join('');
+  panel.innerHTML =
+    '<div class="panel-title">Experimental: nearest weather station</div>' +
+    'Each location now uses the temperature, rainfall and wind from its nearest NEA station (' +
+    state.stations.temp.length + ' temperature, ' + state.stations.rain.length + ' rainfall and ' + state.stations.wind.length + ' wind stations). ' +
+    'Across the ' + TOWNS.length + ' towns, the largest change from the region-wide prediction is <b>' + maxDiff + ' PSI point' + (maxDiff === 1 ? '' : 's') + '</b>.' +
+    '<table class="haze-table"><tr><th>Region</th><th>Region-wide prediction</th><th>Towns, nearest station</th></tr>' + rows + '</table>' +
+    '<div class="guide-note">The models were trained on Admiralty weather only, and live readings are instant values, so these differences mostly reflect short-term variation between stations, not proven local differences in air quality. Treat this as an experiment.</div>';
 }
 
 // ---------------------------------------------------------------
@@ -1295,6 +1405,10 @@ if (typeof L === 'undefined') {
   document.querySelectorAll('input[name="mapstyle"]').forEach(r =>
     r.addEventListener('change', e => { if (e.target.checked) setMapStyle(e.target.value); }));
   document.getElementById('toggle-rec').addEventListener('change', applyLayers);
+  document.getElementById('toggle-exp').addEventListener('change', e => {
+    state.experimental = e.target.checked;
+    if (state.loaded) redrawAll();
+  });
   document.getElementById('haze-chip').addEventListener('click', () => {
     document.querySelector('input[name="viewmode"][value="regional"]').checked = true;
     setViewMode('regional');
